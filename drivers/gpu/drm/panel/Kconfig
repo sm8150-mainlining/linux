@@ -870,6 +870,17 @@ config DRM_PANEL_SYNAPTICS_R63353
 	  Say Y if you want to enable support for panels based on the
 	  Synaptics R63353 controller.
 
+config DRM_PANEL_TIANMA_NT36672C
+        tristate "Tianma NT36672C DSC FHD IPS-LCD panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        help
+          Say Y if you want to enable support for j20s_36_02_0a Tianma
+          DSC mode IPS-LCD (1080x2400@120hz) panel with nt36672c Novatek
+          touchscreen controller as found in Xiaomi
+          POCO X3 Pro codenamed VAYU.
+
 config DRM_PANEL_TDO_TL070WSH30
 	tristate "TDO TL070WSH30 DSI panel"
 	depends on OF
