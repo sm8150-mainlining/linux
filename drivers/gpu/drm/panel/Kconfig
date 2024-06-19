@@ -167,6 +167,17 @@ config DRM_PANEL_HIMAX_HX8394
 
 	  If M is selected the module will be called panel-himax-hx8394.
 
+config DRM_PANEL_HUAXING_NT36672C
+	tristate "Huaxing NT36672C DSC FHD IPS-LCD panel"
+	depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+	help
+	  Say Y if you want to enable support for j20s_42_02_0b Huaxing
+	  DSC mode IPS-LCD (1080x2400@120hz) panel with nt36672c Novatek
+	  touchscreen controller as found in Xiaomi
+	  POCO X3 Pro codenamed VAYU.
+
 config DRM_PANEL_ILITEK_IL9322
 	tristate "Ilitek ILI9322 320x240 QVGA panels"
 	depends on OF && SPI
