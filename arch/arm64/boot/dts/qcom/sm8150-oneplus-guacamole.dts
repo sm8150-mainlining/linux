@@ -1,0 +1,56 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/*
+ * Devicetree for the OnePlus 7 Pro. This device uses a samsung touch driver
+ * and has a 1440p panel but is otherwise similar to the rest of the series.
+ *
+ * Copyright (c) 2021, Caleb Connolly <caleb@connolly.tech>
+ * Copyright (c) 2024, NetuserPRO <netuserpro0@gmail.com>
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/regulator/qcom,rpmh-regulator.h>
+#include <dt-bindings/gpio/gpio.h>
+#include "sm8150-oneplus-common.dtsi"
+
+/ {
+	model = "OnePlus 7 Pro";
+	compatible = "oneplus,guacamole", "oneplus,sm8150", "qcom,sm8150";
+   	chassis-type = "handset";
+    qcom,board-id = <8 0 18857 11>;
+
+    battery: battery {
+		compatible = "simple-battery";
+
+		charge-full-design-microamp-hours = <4000000>;
+		voltage-min-design-microvolt = <3400000>;
+		voltage-max-design-microvolt = <4400000>;
+	};
+};
+
+&display_panel {
+	status = "okay";
+
+	compatible = "samsung,oneplus-dsc";
+};
+
+&bq27541_fg {
+	monitored-battery = <&battery>;
+};
+
+&i2c17 {
+	status = "okay";
+	clock-frequency = <400000>;
+
+	touchscreen@48 {
+		compatible = "samsung,s6sy761";
+		status = "okay";
+		reg = <0x48>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <122 0x2008>;
+		vdd-supply = <&vreg_l17a_3p0>;
+
+		pinctrl-names = "default";
+		pinctrl-0 = <&tp_irq_active &tp_rst_active &tp_1v8_active>;
+	};
+};
