@@ -622,6 +622,16 @@ config DRM_PANEL_SAMSUNG_LD9040
 	depends on BACKLIGHT_CLASS_DEVICE
 	select VIDEOMODE_HELPERS
 
+config DRM_PANEL_SAMSUNG_ONEPLUS_DSC
+	tristate "Samsung ONEPLUS-DSC QHD OLED panel"
+	depends on OF
+    depends on DRM_MIPI_DSI
+    depends on BACKLIGHT_CLASS_DEVICE
+	select VIDEOMODE_HELPERS
+	help
+	  Say Y or M here if you want to enable support for the Samsung OLED
+	  command mode DSC panel found in the OnePlus 7(T) Pro smartphones.
+
 config DRM_PANEL_SAMSUNG_S6E3FA7
 	tristate "Samsung S6E3FA7 panel driver"
 	depends on OF
