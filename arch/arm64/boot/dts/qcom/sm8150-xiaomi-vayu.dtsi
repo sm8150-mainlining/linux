@@ -480,6 +480,11 @@
 	};
 };
 
+&pm8150b_fg {
+	status = "okay";
+	monitored-battery = <&battery>;
+};
+
 &pm8150b_typec {
 	vdd-pdphy-supply = <&vreg_l2a_3p1>;
 	status = "okay";
