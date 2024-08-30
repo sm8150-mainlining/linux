@@ -534,7 +534,7 @@
 
 	zap-shader {
 		memory-region = <&gpu_mem>;
-		firmware-name = "qcom/sm8150/oneplus/a640_zap.mbn";
+		firmware-name = "qcom/sm8150/oneplus7/a640_zap.mbn";
 	};
 };
 
@@ -683,22 +683,22 @@
 
 &remoteproc_adsp {
 	status = "okay";
-	firmware-name = "qcom/sm8150/oneplus/adsp.mbn";
+	firmware-name = "qcom/sm8150/oneplus7/adsp.mbn";
 };
 
 &remoteproc_cdsp {
 	status = "okay";
-	firmware-name = "qcom/sm8150/oneplus/cdsp.mbn";
+	firmware-name = "qcom/sm8150/oneplus7/cdsp.mbn";
 };
 
 &remoteproc_slpi {
 	status = "okay";
-	firmware-name = "qcom/sm8150/oneplus/slpi.mbn";
+	firmware-name = "qcom/sm8150/oneplus7/slpi.mbn";
 };
 
 &remoteproc_mpss {
 	status = "okay";
-	firmware-name = "qcom/sm8150/oneplus/modem.mbn";
+	firmware-name = "qcom/sm8150/oneplus7/modem.mbn";
 };
 
 // FIXME: Some of these might be guacamole specific
