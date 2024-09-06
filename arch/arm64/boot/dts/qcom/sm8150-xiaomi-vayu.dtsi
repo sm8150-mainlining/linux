@@ -7,7 +7,10 @@
 #include <dt-bindings/gpio/gpio.h>
 #include <dt-bindings/usb/pd.h>
 #include <dt-bindings/leds/common.h>
+#include <dt-bindings/sound/qcom,q6afe.h>
+#include <dt-bindings/sound/qcom,q6asm.h>
 #include "sm8150.dtsi"
+#include "sm8150-wcd9340.dtsi"
 #include "pm8150.dtsi"
 #include "pm8150b.dtsi"
 #include "pm8150l.dtsi"
@@ -416,6 +419,35 @@
 	};
 };
 
+&i2c7 {
+	clock-frequency = <100000>;
+	status = "okay";
+
+	tas2562: codec@4c { /* SPK */
+		compatible = "ti,tas2562";
+		reg = <0x4c>;
+		#sound-dai-cells = <1>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <91 IRQ_TYPE_NONE>;
+		shutdown-gpios = <&tlmm 92 GPIO_ACTIVE_HIGH>;
+		ti,imon-slot-no = <0>;
+		ti,vmon-slot-no = <2>;
+		sound-name-prefix = "Right";
+	};
+
+	tas2564: codec@4d { /* EAR */
+		compatible = "ti,tas2564";
+		reg = <0x4d>;
+		#sound-dai-cells = <1>;
+		interrupt-parent = <&tlmm>;
+		interrupts = <90 IRQ_TYPE_NONE>;
+		shutdown-gpios = <&tlmm 89 GPIO_ACTIVE_HIGH>;
+		ti,imon-slot-no = <1>;
+		ti,vmon-slot-no = <3>;
+		sound-name-prefix = "Left";
+	};
+};
+
 &gpi_dma0 {
 	status = "okay";
 };
@@ -573,6 +605,20 @@
 	pins = "gpio55", "gpio56", "gpio57";
 };
 
+&q6afedai {
+	qi2s@22 {
+		reg = <22>;
+		qcom,sd-lines = <0>;
+	};
+};
+
+&q6asmdai {
+	dai@0 {
+		reg = <0>;
+	};
+};
+
+
 &qupv3_id_0 {
 	status = "okay";
 };
@@ -716,8 +762,53 @@
 	};
 };
 
+&sound {
+	compatible = "qcom,sdm845-sndcard";
+	pinctrl-0 = <&quat_mi2s_active
+		&quat_mi2s_sd0_active>;
+	pinctrl-names = "default";
+	model = "POCO X3 PRO";
+
+	mm1-dai-link {
+		link-name = "MultiMedia1";
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA1>;
+		};
+	};
+
+	i2s-dai-link {
+		link-name = "I2S Playback";
+		cpu {
+			sound-dai = <&q6afedai QUATERNARY_MI2S_RX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&tas2562 0>, <&tas2564 0>;
+		};
+	};
+};
+
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <126 4>;
+
+	quat_mi2s_active: quat-mi2s-active-state {
+		pins = "gpio137", "gpio138";
+		function = "qua_mi2s";
+		drive-strength = <8>;
+		bias-disable;
+		output-high;
+	};
+			
+	quat_mi2s_sd0_active: quat-mi2s-sd0-active-state {
+		pins = "gpio139";
+		function = "qua_mi2s";
+		drive-strength = <8>;
+		bias-disable;
+	};
 
 	ts_int_active: ts_int_active {
 		pins = "gpio122";
@@ -998,6 +1089,26 @@
 
 &usb_1_dwc3_hs {
 	remote-endpoint = <&pm8150b_role_switch_in>;
+};
+
+&wcd9340 {
+	reset-gpios = <&tlmm 143 GPIO_ACTIVE_HIGH>;
+	vdd-buck-sido-supply = <&vreg_s4a_1p8>;
+	vdd-buck-supply = <&vreg_s4a_1p8>;
+	vdd-tx-supply = <&vreg_s4a_1p8>;
+	vdd-rx-supply = <&vreg_s4a_1p8>;
+	vdd-io-supply = <&vreg_s4a_1p8>;
+
+	qcom,micbias1-microvolt = <1800000>;
+	qcom,micbias2-microvolt = <2750000>;
+	qcom,micbias3-microvolt = <1800000>;
+	qcom,micbias4-microvolt = <1800000>;
+
+	qcom,hphl-jack-type-normally-open;
+	qcom,ground-jack-type-normally-open;
+	qcom,mbhc-buttons-vthreshold-microvolt = <75000 150000 237000 500000 500000 500000 500000 500000>;
+	qcom,mbhc-headset-vthreshold-microvolt = <2600000>;
+	qcom,mbhc-headphone-vthreshold-microvolt = <50000>;
 };
 
 &wifi {
