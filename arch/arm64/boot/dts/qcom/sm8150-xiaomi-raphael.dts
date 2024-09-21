@@ -14,6 +14,9 @@
 #include <dt-bindings/regulator/qcom,rpmh-regulator.h>
 #include <dt-bindings/sound/qcom,q6afe.h>
 #include <dt-bindings/sound/qcom,q6asm.h>
+#include <dt-bindings/usb/pd.h>
+#include <dt-bindings/leds/common.h>
+
 #include "sm8150.dtsi"
 #include "sm8150-wcd9340.dtsi"
 #include "pm8150.dtsi"
@@ -541,7 +544,7 @@
 		reg = <0>;
 		status = "okay";
 		
-		vddio-supply = <&vreg_l14a_1p88>;
+		vddio-supply = <&vreg_l14a_1p8>;
 		vcie-supply = <&disp_vci_vreg>;
 		vci-supply = <&vreg_l13a_2p7>;
 		reset-gpios = <&tlmm 6 GPIO_ACTIVE_LOW>;
@@ -565,7 +568,7 @@
 
 &mdss_dsi0_phy {
 	status = "okay";
-	vdds-supply = <&vreg_l5a_0p875>;
+	vdds-supply = <&vreg_l5a_0p8>;
 };
 
 &mdss {
@@ -1097,7 +1100,7 @@
 
 &wifi {
 	status = "okay";
-	vdd-0.8-cx-mx-supply = <&vdda_wcss_pll>;
+	vdd-0.8-cx-mx-supply = <&vreg_l1a_0p75>;
 	vdd-1.8-xo-supply = <&vreg_l7a_1p8>;
 	vdd-1.3-rfa-supply = <&vreg_l2c_1p3>;
 	vdd-3.3-ch0-supply = <&vreg_l11c_3p3>;
