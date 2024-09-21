@@ -1,5 +1,5 @@
 #include "goodix_cfg_bin.h"
-#include <linux/msm_drm_notify.h>
+#include <drm/msm_drm_notify.h>
 
 extern int goodix_i2c_write(struct goodix_ts_device *dev, unsigned int reg, unsigned char *data, unsigned int len);
 extern int goodix_i2c_read(struct goodix_ts_device *dev, unsigned int reg, unsigned char *data, unsigned int len);
@@ -503,10 +503,14 @@ int goodix_read_cfg_bin(struct device *dev, struct goodix_cfg_bin *cfg_bin)
 		return -EINVAL;
 	}
 	/*get cfg_bin_name*/
-	if (ts_bdata->cfg_bin_name)
-		strlcpy(cfg_bin_name, ts_bdata->cfg_bin_name, sizeof(cfg_bin_name));
-	else
-		strlcpy(cfg_bin_name, TS_DEFAULT_CFG_BIN, sizeof(cfg_bin_name));
+	if (ts_bdata->cfg_bin_name) {
+		strncpy(cfg_bin_name, ts_bdata->cfg_bin_name, sizeof(cfg_bin_name) - 1);
+		cfg_bin_name[sizeof(cfg_bin_name) - 1] = '\0';
+	}
+	else {
+		strncpy(cfg_bin_name, TS_DEFAULT_CFG_BIN, sizeof(cfg_bin_name) - 1);
+		cfg_bin_name[sizeof(cfg_bin_name) - 1] = '\0';
+	}
 	ts_info("ts_bdata->cfg_bin_name:%s", ts_bdata->cfg_bin_name);
 	ts_info("cfg_bin_name:%s", cfg_bin_name);
 	for (i = 0; i < TS_RQST_FW_RETRY_TIMES; i++) {

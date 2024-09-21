@@ -1,28 +1,5 @@
 #include "spi-xiaomi-tp.h"
 
-#ifndef HAVE_STRLCPY
-size_t                  /* O - Length of string */
-strlcpy(char *dst,        /* O - Destination string */
-	const char *src,      /* I - Source string */
-	size_t size)     /* I - Size of destination string buffer */
-{
-  size_t srclen;         /* Length of source string */
- /*
-  * Figure out how much room is needed...
-  */
-  size --;
-  srclen = strlen(src);
- /*
-  * Copy the appropriate amount...
-  */
-  if (srclen > size)
-    srclen = size;
-  memcpy(dst, src, srclen);
-  dst[srclen] = '\0';
-  return (srclen);
-}
-#endif /* !HAVE_STRLCPY */
-
 #define DEBUG
 
 static struct ts_spi_info owner;
@@ -97,7 +74,8 @@ int32_t get_ts_xsfer(const char *name)
 		return -EPERM;
 	}
 	owner.used = true;
-	strlcpy(owner.name, name, NAME_MAX_LENS);
+	strncpy(owner.name, name, NAME_MAX_LENS - 1);
+	owner.name[NAME_MAX_LENS - 1] = '\0';
 	mutex_unlock(&owner.lock);
 	return 0;
 }
@@ -141,8 +119,10 @@ struct spi_device *test_then_get_spi(const char *name)
 	} else {
 		owner.used = true;
 		ret = owner.client;
-		if (name)
-			strlcpy(owner.name, name, NAME_MAX_LENS);
+		if (name) {
+			strncpy(owner.name, name, NAME_MAX_LENS - 1);
+			owner.name[NAME_MAX_LENS - 1] = '\0';
+		}
 	}
 	mutex_unlock(&owner.lock);
 

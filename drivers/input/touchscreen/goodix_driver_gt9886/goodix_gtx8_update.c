@@ -18,6 +18,7 @@
 #include "goodix_ts_core.h"
 #include "goodix_cfg_bin.h"
 #include "goodix_default_fw.h"
+
 /* COMMON PART - START */
 #define TS_DEFAULT_FIRMWARE			"goodix_gt9886_fw_f11.bin"
 
@@ -1269,10 +1270,12 @@ static int goodix_fw_update_init(struct goodix_ts_core *core_data,
 
 	/* find a valid firmware image name */
 	if (ts_bdata && ts_bdata->fw_name) {
-		strlcpy(fwu_ctrl->fw_name, ts_bdata->fw_name, sizeof(fwu_ctrl->fw_name));
+		strncpy(fwu_ctrl->fw_name, ts_bdata->fw_name, sizeof(fwu_ctrl->fw_name) - 1);
+		fwu_ctrl->fw_name[sizeof(fwu_ctrl->fw_name) - 1] = '\0';
 		ts_info("find goodix firmware:%s\n", ts_bdata->fw_name);
 	} else{
-		strlcpy(fwu_ctrl->fw_name, TS_DEFAULT_FIRMWARE, sizeof(fwu_ctrl->fw_name));
+		strncpy(fwu_ctrl->fw_name, TS_DEFAULT_FIRMWARE, sizeof(fwu_ctrl->fw_name) - 1);
+		fwu_ctrl->fw_name[sizeof(fwu_ctrl->fw_name) - 1] = '\0';
 		ts_info("can't find goodix firmware,use default name\n");
 	}
 
