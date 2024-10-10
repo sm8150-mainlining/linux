@@ -920,6 +920,17 @@ config DRM_PANEL_TDO_TL070WSH30
 	  24 bit RGB per pixel. It provides a MIPI DSI interface to
 	  the host, a built-in LED backlight and touch controller.
 
+config DRM_PANEL_TIANMA_NT36672C
+        tristate "Tianma NT36672C DSC FHD DSI panel"
+        depends on OF
+        depends on DRM_MIPI_DSI
+        depends on BACKLIGHT_CLASS_DEVICE
+        help
+          Say Y if you want to enable support for j20s_36_02_0a Tianma
+          DSC DSI video mode IPS-LCD panel (1080x2400@120hz) with
+          nt36672c NovaTek touchscreen controller as found in Xiaomi
+          POCO X3 Pro codenamed VAYU.
+
 config DRM_PANEL_TPO_TD028TTEC1
 	tristate "Toppoly (TPO) TD028TTEC1 panel driver"
 	depends on OF && SPI
