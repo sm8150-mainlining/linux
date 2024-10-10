@@ -32,8 +32,8 @@ fi
 
 scm_version()
 {
-	local short=false
-	local no_dirty=false
+	local short=true
+	local no_dirty=true
 	local tag
 
 	while [ $# -gt 0 ];
