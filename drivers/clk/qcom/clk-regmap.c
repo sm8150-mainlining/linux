@@ -55,7 +55,7 @@ int clk_enable_regmap(struct clk_hw *hw)
 	else
 		val = rclk->enable_mask;
 
-	udelay(2500);
+	udelay(5000);
 
 	return regmap_update_bits(rclk->regmap, rclk->enable_reg,
 				  rclk->enable_mask, val);
@@ -81,7 +81,7 @@ void clk_disable_regmap(struct clk_hw *hw)
 	else
 		val = 0;
 
-	udelay(2500);
+	udelay(5000);
 
 	regmap_update_bits(rclk->regmap, rclk->enable_reg, rclk->enable_mask,
 			   val);
