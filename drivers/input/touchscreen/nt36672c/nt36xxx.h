@@ -34,6 +34,8 @@
 
 #include "nt36xxx_mem_map.h"
 
+#define NVT_DEBUG 0
+
 #define FW_HISTORY_SIZE	128
 /*Lock down info size*/
 #define NVT_LOCKDOWN_SIZE			8
@@ -58,8 +60,13 @@
 
 /* ---SPI driver info.--- */
 #define NVT_SPI_NAME "NVT-ts-spi"
-#define NVT_LOG(fmt, args...)	{}
-#define NVT_ERR(fmt, args...)	{}
+
+#if NVT_DEBUG
+#define NVT_LOG(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_SPI_NAME, __func__, __LINE__, ##args)
+#else
+#define NVT_LOG(fmt, args...)    pr_info("[%s] %s %d: " fmt, NVT_SPI_NAME, __func__, __LINE__, ##args)
+#endif
+#define NVT_ERR(fmt, args...)    pr_err("[%s] %s %d: " fmt, NVT_SPI_NAME, __func__, __LINE__, ##args)
 
 /* ---Input device info.--- */
 #define NVT_TS_NAME "NVTCapacitiveTouchScreen"
@@ -85,14 +92,7 @@
 #define PACKET_PALM_OFF 4
 
 #define BOOT_UPDATE_FIRMWARE 1
-#define DEFAULT_BOOT_UPDATE_FIRMWARE_FIRST "j20s_novatek_ts_fw01.bin"
-#define DEFAULT_MP_UPDATE_FIRMWARE_FIRST   "j20s_novatek_ts_mp01.bin"
-#define DEFAULT_BOOT_UPDATE_FIRMWARE_SECOND "j20s_novatek_ts_fw02.bin"
-#define DEFAULT_MP_UPDATE_FIRMWARE_SECOND   "j20s_novatek_ts_mp02.bin"
-#define DEFAULT_DEBUG_FW_NAME "novatek_debug_fw.bin"
-#define DEFAULT_DEBUG_MP_NAME "novatek_debug_mp.bin"
 
-extern int touch_fw_override;
 
 /* ---ESD Protect.--- */
 #define NVT_TOUCH_ESD_PROTECT 1
@@ -167,8 +167,6 @@ struct nvt_ts_data {
 	uint32_t config_array_size;
 	struct nvt_config_info *config_array;
 	int panel_index;
-	const u8 *fw_name;
-	const u8 *mp_name;
 	uint32_t spi_max_freq;
 	struct attribute_group *attrs;
 	/*bit map indicate which slot(0~9) has been used*/
@@ -186,6 +184,7 @@ struct nvt_ts_data {
 	bool dev_pm_suspend;
 	struct completion dev_pm_suspend_completion;
 	bool palm_sensor_switch;
+	const char *firmware_name;
 	uint8_t debug_flag;
 };
 
@@ -246,10 +245,8 @@ int32_t nvt_set_page(uint32_t addr);
 int32_t nvt_write_addr(uint32_t addr, uint8_t data);
 void nvt_set_dbgfw_status(bool enable);
 bool nvt_get_dbgfw_status(void);
-void nvt_match_fw(void);
 int32_t nvt_set_pocket_palm_switch(uint8_t pocket_palm_switch);
 #if NVT_TOUCH_ESD_PROTECT
 extern void nvt_esd_check_enable(uint8_t enable);
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
-extern int panel_is_tianma;
 #endif /* _LINUX_NVT_TOUCH_H */

@@ -300,35 +300,6 @@ static void update_firmware_release(void)
 	fw_entry = NULL;
 }
 
-int touch_fw_override = 0;
-char *touch_fw_name = "j20s_novatek_ts_fw01.bin";
-int panel_is_tianma = 0;
-
-static void update_firmware_override(int choice) {
-	if (panel_is_tianma) {
-		switch (choice) {
-			case 1:  touch_fw_name = "j20s_novatek_ts_fw01.2f0c.bin"; break;
-			case 2:  touch_fw_name = "j20s_novatek_ts_fw01.2fa7.bin"; break;
-			case 3:  touch_fw_name = "j20s_novatek_ts_fw01.3a42.bin"; break;
-			case 4:  touch_fw_name = "j20s_novatek_ts_fw01.8ac8.bin"; break;
-			case 8:  touch_fw_name = "j20s_novatek_ts_mp01.1b3b.bin"; break;
-			case 9:  touch_fw_name = "j20s_novatek_ts_mp01.8cb5.bin"; break;
-			default: touch_fw_name = "j20s_novatek_ts_fw01.bin"; break;
-		}
-		NVT_LOG("tianma: override");
-	} else {
-		switch (choice) {
-			case 5:  touch_fw_name = "j20s_novatek_ts_fw02.71e7.bin"; break;
-			case 6:  touch_fw_name = "j20s_novatek_ts_fw02.9874.bin"; break;
-			case 7:  touch_fw_name = "j20s_novatek_ts_fw02.fd13.bin"; break;
-			case 10: touch_fw_name = "j20s_novatek_ts_mp02.2c1f.bin"; break;
-			case 11: touch_fw_name = "j20s_novatek_ts_mp02.9fb2.bin"; break;
-			default: touch_fw_name = "j20s_novatek_ts_fw02.bin"; break;
-		}
-		NVT_LOG("huaxing: override");
-	}
-}
-
 /*******************************************************
 Description:
 	Novatek touchscreen request update firmware function.
@@ -340,11 +311,6 @@ static int32_t update_firmware_request(const char *filename)
 {
 	uint8_t retry = 0;
 	int32_t ret = 0;
-
-	if (touch_fw_override) {
-		update_firmware_override(touch_fw_override);
-		filename = touch_fw_name;
-	}
 
 	if (NULL == filename) {
 		return -ENOENT;
@@ -1125,7 +1091,7 @@ int32_t nvt_update_firmware(const char *firmware_name)
 	}
 
 	NVT_LOG("Update firmware success! <%ld us>\n",
-			(long)ktime_to_ns(ktime_sub(end, start))/1000;);
+			(long)ktime_to_ns(ktime_sub(end, start))/1000);
 
 	/* Get FW Info */
 	ret = nvt_get_fw_info();
@@ -1155,16 +1121,8 @@ return:
 *******************************************************/
 void Boot_Update_Firmware(struct work_struct *work)
 {
-	nvt_match_fw();
 	mutex_lock(&ts->lock);
-	if (nvt_get_dbgfw_status()) {
-		if (nvt_update_firmware(DEFAULT_DEBUG_FW_NAME) < 0) {
-			NVT_ERR("use built-in fw");
-			nvt_update_firmware(ts->fw_name);
-		}
-	} else {
-		nvt_update_firmware(ts->fw_name);
-	}
+	nvt_update_firmware(ts->firmware_name);
 	nvt_get_fw_info();
 	mutex_unlock(&ts->lock);
 	pm_relax(&ts->pdev->dev);

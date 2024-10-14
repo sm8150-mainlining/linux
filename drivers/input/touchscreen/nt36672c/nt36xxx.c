@@ -54,10 +54,6 @@
 #endif
 #endif
 
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-#include "../xiaomi/xiaomi_touch.h"
-#endif
-
 #if NVT_TOUCH_ESD_PROTECT
 static struct delayed_work nvt_esd_check_work;
 static struct workqueue_struct *nvt_esd_check_wq;
@@ -67,11 +63,6 @@ uint8_t esd_retry = 0;
 static int esd_check_force = 0;
 static int esd_check_scale = 8;
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
-
-#if NVT_TOUCH_EXT_PROC
-extern int32_t nvt_extra_proc_init(void);
-extern void nvt_extra_proc_deinit(void);
-#endif
 
 struct nvt_ts_data *ts;
 
@@ -93,9 +84,6 @@ static void nvt_ts_late_resume(struct early_suspend *h);
 static int32_t nvt_ts_suspend(struct device *dev);
 static int32_t nvt_ts_resume(struct device *dev);
 extern void dsi_panel_doubleclick_enable(bool on);
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-static int32_t nvt_check_palm(uint8_t input_id, uint8_t *data);
-#endif
 uint32_t ENG_RST_ADDR  = 0x7FFF80;
 uint32_t SWRST_N8_ADDR = 0; /* read from dtsi */
 uint32_t SPI_RD_FAST_ADDR = 0; /* read from dtsi */
@@ -170,8 +158,6 @@ return:
 *******************************************************/
 static void nvt_irq_enable(bool enable)
 {
-	struct irq_desc *desc;
-
 	if (enable) {
 		if (!ts->irq_enabled) {
 			enable_irq(ts->client->irq);
@@ -183,9 +169,6 @@ static void nvt_irq_enable(bool enable)
 			ts->irq_enabled = false;
 		}
 	}
-
-	desc = irq_to_desc(ts->client->irq);
-	NVT_LOG("enable=%d, desc->depth=%d\n", enable, desc->depth);
 }
 
 /*******************************************************
@@ -985,14 +968,6 @@ static int32_t nvt_parse_dt(struct device *dev)
 		NVT_LOG("SPI_RD_FAST_ADDR=0x%06X\n", SPI_RD_FAST_ADDR);
 	}
 
-	ret = of_property_read_u32(np, "novatek,config-array-size", &ts->config_array_size);
-	if (ret) {
-		NVT_ERR("Unable to get array size\n");
-		return ret;
-	} else {
-		NVT_LOG("config-array-size: %u\n", ts->config_array_size);
-	}
-
 	ret = of_property_read_u32(np, "spi-max-frequency", &ts->spi_max_freq);
 	if (ret) {
 		NVT_ERR("Unable to get spi freq\n");
@@ -1001,151 +976,18 @@ static int32_t nvt_parse_dt(struct device *dev)
 		NVT_LOG("spi-max-frequency: %u\n", ts->spi_max_freq);
 	}
 
-	ts->config_array = devm_kzalloc(dev, ts->config_array_size * sizeof(struct nvt_config_info), GFP_KERNEL);
-	if (!ts->config_array) {
-		NVT_ERR("Unable to allocate memory\n");
-		return -ENOMEM;
-	}
+	// Allow firmware to be overwritten by device tree
+        ret = of_property_read_string(np, "firmware-name", &ts->firmware_name);
+        if (ret) {
+                NVT_ERR("Unable to get firmware name, THIS IS A DOWENLOAD DRIEVR WAHT DO YOU EXPECT WHEN YOU DONT PUT FIRMWARE	sir");
+                return ret;
+        } else {
+                NVT_LOG("firmware-name: %s\n", ts->firmware_name);
+        }
 
-
-	config_info = ts->config_array;
-	for_each_child_of_node(np, temp) {
-		if (config_info - ts->config_array >= ts->config_array_size) {
-			NVT_LOG("parse %ld config down\n", config_info - ts->config_array);
-			break;
-		}
-
-		ret = of_property_read_u32(temp, "novatek,tp-vendor", &temp_val);
-		if (ret) {
-			NVT_ERR("Unable to read tp vendor\n");
-		} else {
-			config_info->tp_vendor = (u8) temp_val;
-			NVT_LOG("tp vendor: %u", config_info->tp_vendor);
-		}
-
-		ret = of_property_read_u32(temp, "novatek,display-maker", &temp_val);
-		if (ret) {
-			NVT_ERR("Unable to read tp hw version\n");
-		} else {
-			config_info->display_maker = (u8) temp_val;
-			NVT_LOG("tp hw version: %u", config_info->display_maker);
-		}
-
-		/*
-		ret = of_property_read_u32(temp, "novatek,glass-vendor", &temp_val);
-		if (ret) {
-			NVT_ERR("Unable to read tp hw version\n");
-		} else {
-			config_info->glass_vendor = (u8) temp_val;
-			NVT_LOG("tp hw version: %u", config_info->glass_vendor);
-		}*/
-
-		ret = of_property_read_string(temp, "novatek,fw-name",
-						&config_info->nvt_fw_name);
-		if (ret && (ret != -EINVAL)) {
-			NVT_ERR("Unable to read fw name\n");
-		} else {
-			NVT_LOG("fw_name: %s", config_info->nvt_fw_name);
-		}
-
-		ret = of_property_read_string(temp, "novatek,mp-name",
-						&config_info->nvt_mp_name);
-		if (ret && (ret != -EINVAL)) {
-			NVT_ERR("Unable to read mp name\n");
-		} else {
-			NVT_LOG("mp_name: %s", config_info->nvt_mp_name);
-		}
-
-		/*
-		ret = of_property_read_string(temp, "novatek,limit-name",
-						 &config_info->nvt_limit_name);
-		if (ret && (ret != -EINVAL)) {
-			NVT_LOG("Unable to read limit name\n");
-		} else {
-			NVT_LOG("limit_name: %s", config_info->nvt_limit_name);
-		}*/
-		config_info++;
-	}
 	return ret;
 }
 #endif
-
-static bool nvt_cmds_panel_info(void)
-{
-	bool panel_id = false;
-	char display_node[37] = {'\0'};
-	char *match = (char *) strnstr(saved_command_line,
-				"msm_drm.dsi_display0=",
-				strlen(saved_command_line));
-	if (match) {
-		memcpy(display_node, (match + strlen("msm_drm.dsi_display0=")),
-			sizeof(display_node) - 1);
-		NVT_LOG("%s: display_node is %s\n", __func__, display_node);
-		if (!strncmp(display_node, "dsi_j20s_36_02_0a_video_display",
-					strlen("dsi_j20s_36_02_0a_video_display"))) {
-			panel_id = true;
-			panel_is_tianma = 1;
-		}
-	}
-	return panel_id;
-}
-
-static inline int dsi_panel_lockdown_info_read(unsigned char *plockdowninfo)
-{
-	if (nvt_cmds_panel_info()) {
-		NVT_LOG("%s: lockdown panel is tianma\n", __func__);
-		plockdowninfo[0] = 0x46;
-		plockdowninfo[1] = 0x36;
-		plockdowninfo[2] = 0x32;
-		plockdowninfo[3] = 0x01;
-		plockdowninfo[4] = 0x4a;
-		plockdowninfo[5] = 0x14;
-		plockdowninfo[6] = 0x31;
-		plockdowninfo[7] = 0x00;
-	} else {
-		NVT_LOG("%s: lockdown panel is huaxing\n", __func__);
-		plockdowninfo[0] = 0x00;
-		plockdowninfo[1] = 0x00;
-		plockdowninfo[2] = 0x00;
-		plockdowninfo[3] = 0x00;
-		plockdowninfo[4] = 0x00;
-		plockdowninfo[5] = 0x00;
-		plockdowninfo[6] = 0x00;
-		plockdowninfo[7] = 0x00;
-	}
-	return 1;
-}
-
-static int nvt_get_panel_type(struct nvt_ts_data *ts_data)
-{
-	int i;
-	u8 *lockdown = ts_data->lockdown_info;
-	struct nvt_config_info *panel_list = ts->config_array;
-
-	for (i = 0; i < ts->config_array_size; i++) {
-
-		if (lockdown[0] == panel_list[i].tp_vendor) {
-			if(lockdown[0] == 0x46) {
-				break;
-			}
-			if (lockdown[7] == panel_list[i].glass_vendor) {
-				break;
-			}
-		}
-	}
-
-	ts->panel_index = i;
-
-	if (i >= ts->config_array_size) {
-		NVT_ERR("mismatch panel type, use default fw");
-		ts->panel_index = -EINVAL;
-		return ts->panel_index;
-	}
-
-	NVT_LOG("match panle type, fw is [%s], mp is [%s]",
-		panel_list[i].nvt_fw_name, panel_list[i].nvt_mp_name);
-	return ts->panel_index;
-}
 
 bool is_lockdown_empty(u8 *lockdown)
 {
@@ -1159,27 +1001,6 @@ bool is_lockdown_empty(u8 *lockdown)
 	}
 
 	return ret;
-}
-
-void nvt_match_fw(void)
-{
-	NVT_LOG("start match fw name");
-	if (is_lockdown_empty(ts->lockdown_info))
-		flush_delayed_work(&ts->nvt_lockdown_work);
-	if (nvt_get_panel_type(ts) < 0) {
-		if (nvt_cmds_panel_info()) {
-			NVT_LOG("%s: panel is first\n", __func__);
-			ts->fw_name = DEFAULT_BOOT_UPDATE_FIRMWARE_FIRST;
-			ts->mp_name = DEFAULT_MP_UPDATE_FIRMWARE_FIRST;
-		} else {
-			NVT_LOG("%s: panel is second\n", __func__);
-			ts->fw_name = DEFAULT_BOOT_UPDATE_FIRMWARE_SECOND;
-			ts->mp_name = DEFAULT_MP_UPDATE_FIRMWARE_SECOND;
-		}
-	} else {
-		ts->fw_name = ts->config_array[ts->panel_index].nvt_fw_name;
-		ts->mp_name = ts->config_array[ts->panel_index].nvt_mp_name;
-	}
 }
 
 /*******************************************************
@@ -1292,14 +1113,7 @@ static void nvt_esd_check_func(struct work_struct *work)
 		mutex_lock(&ts->lock);
 		NVT_LOG("do ESD recovery, timer = %d, retry = %d\n", timer, esd_retry);
 		/* do esd recovery, reload fw */
-		if (nvt_get_dbgfw_status()) {
-			if (nvt_update_firmware(DEFAULT_DEBUG_FW_NAME) < 0) {
-				NVT_ERR("use built-in fw");
-				nvt_update_firmware(ts->fw_name);
-			}
-		} else {
-			nvt_update_firmware(ts->fw_name);
-		}
+		nvt_update_firmware(ts->firmware_name);
 		mutex_unlock(&ts->lock);
 		/* update interrupt timer */
 		irq_timer = jiffies;
@@ -1439,14 +1253,7 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 			NVT_ERR("Dump FW history:\n");
 			nvt_dump_fw_history();
 		}
-		if (nvt_get_dbgfw_status()) {
-			if (nvt_update_firmware(DEFAULT_DEBUG_FW_NAME) < 0) {
-				NVT_ERR("use built-in fw");
-				nvt_update_firmware(ts->fw_name);
-			}
-		} else {
-			nvt_update_firmware(ts->fw_name);
-		}
+		nvt_update_firmware(ts->firmware_name);
 		goto XFER_ERROR;
    }
 #endif /* #if NVT_TOUCH_WDT_RECOVERY */
@@ -1458,13 +1265,6 @@ static irqreturn_t nvt_ts_work_func(int irq, void *data)
 		goto XFER_ERROR;
 	}
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
-
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-	input_id = (uint8_t)(point_data[1] >> 3);
-	if (nvt_check_palm(input_id, point_data)) {
-		goto XFER_ERROR; /* to skip point data parsing */
-	}
-#endif
 
 #if WAKEUP_GESTURE
 	if (bTouchIsAwake == 0) {
@@ -1684,397 +1484,6 @@ static void nvt_switch_mode_work(struct work_struct *work)
 	}*/
 }
 
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-
-static struct xiaomi_touch_interface xiaomi_touch_interfaces;
-
-int32_t nvt_check_palm(uint8_t input_id, uint8_t *data)
-{
-	int32_t ret = 0;
-	uint8_t func_type = data[2];
-	uint8_t palm_state = data[3];
-
-	if ((input_id == DATA_PROTOCOL) && (func_type == FUNCPAGE_PALM)) {
-		ret = palm_state;
-		if (palm_state == PACKET_PALM_ON) {
-			NVT_LOG("get packet palm on event.\n");
-			update_palm_sensor_value(1);
-		} else if (palm_state == PACKET_PALM_OFF) {
-			NVT_LOG("get packet palm off event.\n");
-			update_palm_sensor_value(0);
-		} else {
-			NVT_ERR("invalid palm state %d!\n", palm_state);
-			ret = -1;
-		}
-	} else {
-		ret = 0;
-	}
-
-	return ret;
-}
-
-static int nvt_palm_sensor_write(int value)
-{
-	int ret = 0;
-	NVT_LOG("enter %d %d\n", value, ts->palm_sensor_switch);
-	ts->palm_sensor_switch = value;
-
-	if (ts->dev_pm_suspend) {
-		NVT_LOG("tp has dev_pm_suspend status\n");
-		return 0;
-	}
-
-	if (bTouchIsAwake)
-		ret = nvt_set_pocket_palm_switch(value);
-	return ret;
-}
-
-
-static struct xiaomi_touch_interface xiaomi_touch_interfaces;
-static void nvt_init_touchmode_data(void)
-{
-	int i;
-
-	NVT_LOG("%s,ENTER\n", __func__);
-	/* Touch Game Mode Switch */
-	xiaomi_touch_interfaces.touch_mode[Touch_Game_Mode][GET_MAX_VALUE] = 1;
-	xiaomi_touch_interfaces.touch_mode[Touch_Game_Mode][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Game_Mode][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Game_Mode][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Game_Mode][GET_CUR_VALUE] = 0;
-
-	/* Acitve Mode */
-	xiaomi_touch_interfaces.touch_mode[Touch_Active_MODE][GET_MAX_VALUE] = 1;
-	xiaomi_touch_interfaces.touch_mode[Touch_Active_MODE][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Active_MODE][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Active_MODE][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Active_MODE][GET_CUR_VALUE] = 0;
-
-	/* Sensivity */
-	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][GET_MAX_VALUE] = 2;
-	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][GET_CUR_VALUE] = 0;
-
-	/* Tolerance */
-	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_MAX_VALUE] = 2;
-	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][GET_CUR_VALUE] = 0;
-
-	/* Panel orientation*/
-	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_MAX_VALUE] = 3;
-	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][GET_CUR_VALUE] = 0;
-
-	/* Edge filter area*/
-	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_MAX_VALUE] = 3;
-	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_DEF_VALUE] = 2;
-	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][GET_CUR_VALUE] = 0;
-
-	/* Resist RF interference*/
-	xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][GET_MAX_VALUE] = 1;
-	xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][GET_MIN_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][GET_DEF_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][SET_CUR_VALUE] = 0;
-	xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][GET_CUR_VALUE] = 0;
-
-	for (i = 0; i < Touch_Mode_NUM; i++) {
-		NVT_LOG("mode:%d, set cur:%d, get cur:%d, def:%d min:%d max:%d\n",
-			i,
-			xiaomi_touch_interfaces.touch_mode[i][SET_CUR_VALUE],
-			xiaomi_touch_interfaces.touch_mode[i][GET_CUR_VALUE],
-			xiaomi_touch_interfaces.touch_mode[i][GET_DEF_VALUE],
-			xiaomi_touch_interfaces.touch_mode[i][GET_MIN_VALUE],
-			xiaomi_touch_interfaces.touch_mode[i][GET_MAX_VALUE]);
-	}
-
-	return;
-}
-
-static int nvt_touchfeature_cmd_xsfer(uint8_t *touchfeature)
-{
-	int ret;
-	uint8_t buf[8] = {0};
-
-	NVT_LOG("++\n");
-	NVT_LOG("cmd xsfer:%02x, %02x", touchfeature[0], touchfeature[1]);
-	/* ---set xdata index to EVENT BUF ADDR--- */
-	ret = nvt_set_page(ts->mmap->EVENT_BUF_ADDR | EVENT_MAP_HOST_CMD);
-	if (ret < 0) {
-		NVT_ERR("Set event buffer index fail!\n");
-		goto nvt_touchfeature_cmd_xsfer_out;
-	}
-
-	buf[0] = EVENT_MAP_HOST_CMD;
-	buf[1] = touchfeature[0];
-	buf[2] = touchfeature[1];
-
-	ret = CTP_SPI_WRITE(ts->client, buf, 3);
-	if (ret < 0) {
-		NVT_ERR("Write sensitivity switch command fail!\n");
-		goto nvt_touchfeature_cmd_xsfer_out;
-	}
-
-nvt_touchfeature_cmd_xsfer_out:
-	NVT_LOG("--\n");
-	return ret;
-
-}
-
-static int nvt_touchfeature_set(uint8_t *touchfeature)
-{
-	int ret;
-	if (mutex_lock_interruptible(&ts->lock)) {
-		return -ERESTARTSYS;
-	}
-
-#if NVT_TOUCH_ESD_PROTECT
-	nvt_esd_check_enable(false);
-#endif /* #if NVT_TOUCH_ESD_PROTECT */
-
-	ret = nvt_touchfeature_cmd_xsfer(touchfeature);
-	if (ret < 0)
-		NVT_ERR("send cmd via SPI failed, errno:%d", ret);
-
-	mutex_unlock(&ts->lock);
-	msleep(35);
-	return ret;
-}
-
-
-static int nvt_set_cur_value(int nvt_mode, int nvt_value)
-{
-	bool skip = false;
-	uint8_t nvt_game_value[2] = {0};
-	uint8_t temp_value = 0;
-	uint8_t ret = 0;
-
-	if (nvt_mode >= Touch_Mode_NUM && nvt_mode < 0) {
-		NVT_ERR("%s, nvt mode is error:%d", __func__, nvt_mode);
-		return -EINVAL;
-	}
-
-	if (nvt_mode == Touch_Doubletap_Mode && ts && nvt_value >= 0) {
-		ts-> db_wakeup = nvt_value;
-		schedule_work(&ts->switch_mode_work);
-	}
-
-	xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE] = nvt_value;
-
-	if (xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE] >
-			xiaomi_touch_interfaces.touch_mode[nvt_mode][GET_MAX_VALUE]) {
-
-		xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE] =
-				xiaomi_touch_interfaces.touch_mode[nvt_mode][GET_MAX_VALUE];
-
-	} else if (xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE] <
-			xiaomi_touch_interfaces.touch_mode[nvt_mode][GET_MIN_VALUE]) {
-
-		xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE] =
-				xiaomi_touch_interfaces.touch_mode[nvt_mode][GET_MIN_VALUE];
-	}
-
-	switch (nvt_mode) {
-	case Touch_Game_Mode:
-			break;
-	case Touch_Active_MODE:
-			break;
-	case Touch_UP_THRESHOLD:
-			temp_value = xiaomi_touch_interfaces.touch_mode[Touch_UP_THRESHOLD][SET_CUR_VALUE];
-			nvt_game_value[0] = 0x71;
-			nvt_game_value[1] = temp_value;
-			break;
-	case Touch_Tolerance:
-			temp_value = xiaomi_touch_interfaces.touch_mode[Touch_Tolerance][SET_CUR_VALUE];
-			nvt_game_value[0] = 0x70;
-			nvt_game_value[1] = temp_value;
-			break;
-	case Touch_Edge_Filter:
-			/* filter 0,1,2,3 = default,1,2,3 level*/
-			temp_value = xiaomi_touch_interfaces.touch_mode[Touch_Edge_Filter][SET_CUR_VALUE];
-			nvt_game_value[0] = 0x72;
-			nvt_game_value[1] = temp_value;
-			break;
-	case Touch_Panel_Orientation:
-			/* 0,1,2,3 = 0, 90, 180,270 Counter-clockwise*/
-			temp_value = xiaomi_touch_interfaces.touch_mode[Touch_Panel_Orientation][SET_CUR_VALUE];
-			if (temp_value == 0 || temp_value == 2) {
-				nvt_game_value[0] = 0xBA;
-			} else if (temp_value == 1) {
-				nvt_game_value[0] = 0xBC;
-			} else if (temp_value == 3) {
-				nvt_game_value[0] = 0xBB;
-			}
-			nvt_game_value[1] = 0;
-			break;
-	case Touch_Resist_RF:
-			temp_value = xiaomi_touch_interfaces.touch_mode[Touch_Resist_RF][SET_CUR_VALUE];
-			if (temp_value == 0) {
-				nvt_game_value[0] = 0x76;
-			} else if (temp_value == 1) {
-				nvt_game_value[0] = 0x75;
-			}
-			nvt_game_value[1] = 0;
-			break;
-	default:
-			/* Don't support */
-			skip = true;
-			break;
-	};
-
-	NVT_LOG("mode:%d, value:%d,temp_value:%d,game value:0x%x,0x%x", nvt_mode, nvt_value, temp_value, nvt_game_value[0], nvt_game_value[1]);
-
-	if (!skip) {
-		xiaomi_touch_interfaces.touch_mode[nvt_mode][GET_CUR_VALUE] =
-						xiaomi_touch_interfaces.touch_mode[nvt_mode][SET_CUR_VALUE];
-
-		ret = nvt_touchfeature_set(nvt_game_value);
-		if (ret < 0) {
-			NVT_ERR("change game mode fail");
-		}
-	} else {
-		NVT_LOG("Cmd is not support,skip!");
-	}
-
-	return 0;
-}
-
-static char nvt_touch_vendor_read(void)
-{
-	char value = '4';
-	NVT_LOG("%s Get touch vendor: %c\n", __func__, value);
-	return value;
-}
-
-static u8 nvt_panel_vendor_read(void)
-{
-	char value = '0';
-	int ret = 0;
-	if (!ts)
-		return value;
-	ret = dsi_panel_lockdown_info_read(ts->lockdown_info);
-	if (ret <= 0) {
-		NVT_ERR("can't get lockdown info");
-		return value;
-	}
-	if (!ts->lockdown_info[6]) {
-		NVT_ERR("%s lockdown info is NULL\n", __func__);
-		return value;
-	} else {
-		value = ts->lockdown_info[1];
-		NVT_LOG("%s Get touch vendor: %d\n", __func__, value);
-	}
-	return value;
-}
-
-static u8 nvt_panel_color_read(void)
-{
-	char value = '0';
-	int ret = 0;
-	if (!ts)
-		return value;
-	ret = dsi_panel_lockdown_info_read(ts->lockdown_info);
-	if (ret <= 0) {
-		NVT_ERR("can't get lockdown info");
-		return value;
-	}
-	if (!ts->lockdown_info[2]) {
-		NVT_ERR("%s lockdown info is NULL\n", __func__);
-		return value;
-	} else {
-		value = ts->lockdown_info[2];
-		NVT_LOG("%s Get touch vendor: %d\n", __func__, value);
-	}
-	return value;
-}
-
-static u8 nvt_panel_display_read(void)
-{
-	char value = '0';
-	int ret = 0;
-	if (!ts)
-		return value;
-	ret = dsi_panel_lockdown_info_read(ts->lockdown_info);
-	if (ret <= 0) {
-		NVT_ERR("can't get lockdown info");
-		return value;
-	}
-	if (!ts->lockdown_info[1]) {
-		NVT_ERR("%s lockdown info is NULL\n", __func__);
-		return value;
-	} else {
-		value = ts->lockdown_info[1];
-		NVT_LOG("%s Get touch vendor: %d\n", __func__, value);
-	}
-	return value;
-}
-
-static int nvt_get_mode_value(int mode, int value_type)
-{
-	int value = -1;
-
-	if (mode < Touch_Mode_NUM && mode >= 0)
-		value = xiaomi_touch_interfaces.touch_mode[mode][value_type];
-	else
-		NVT_ERR("%s, don't support\n", __func__);
-
-	return value;
-}
-
-static int nvt_get_mode_all(int mode, int *value)
-{
-	if (mode < Touch_Mode_NUM && mode >= 0) {
-		value[0] = xiaomi_touch_interfaces.touch_mode[mode][GET_CUR_VALUE];
-		value[1] = xiaomi_touch_interfaces.touch_mode[mode][GET_DEF_VALUE];
-		value[2] = xiaomi_touch_interfaces.touch_mode[mode][GET_MIN_VALUE];
-		value[3] = xiaomi_touch_interfaces.touch_mode[mode][GET_MAX_VALUE];
-	} else {
-		NVT_ERR("%s, don't support\n",  __func__);
-	}
-	NVT_LOG("%s, mode:%d, value:%d:%d:%d:%d\n", __func__, mode, value[0],
-					value[1], value[2], value[3]);
-
-	return 0;
-}
-
-static int nvt_reset_mode(int mode)
-{
-	int i = 0;
-
-	NVT_LOG("nvt_reset_mode enter\n");
-
-	if (mode < Touch_Report_Rate && mode > 0) {
-		xiaomi_touch_interfaces.touch_mode[mode][SET_CUR_VALUE] =
-			xiaomi_touch_interfaces.touch_mode[mode][GET_DEF_VALUE];
-		nvt_set_cur_value(mode, xiaomi_touch_interfaces.touch_mode[mode][SET_CUR_VALUE]);
-	} else if (mode == 0) {
-		for (i = 0; i <= Touch_Report_Rate; i++) {
-			if (i == Touch_Panel_Orientation) {
-				xiaomi_touch_interfaces.touch_mode[i][SET_CUR_VALUE] =
-				xiaomi_touch_interfaces.touch_mode[i][GET_CUR_VALUE];
-			} else {
-				xiaomi_touch_interfaces.touch_mode[i][SET_CUR_VALUE] =
-				xiaomi_touch_interfaces.touch_mode[i][GET_DEF_VALUE];
-			}
-			nvt_set_cur_value(i, xiaomi_touch_interfaces.touch_mode[i][SET_CUR_VALUE]);
-		}
-	} else {
-		NVT_ERR("%s, don't support\n",  __func__);
-	}
-
-	NVT_LOG("%s, mode:%d\n",  __func__, mode);
-
-	return 0;
-}
-#endif
-
 #ifdef CONFIG_TOUCHSCREEN_NVT_DEBUG_FS
 
 /*static void tpdbg_shutdown(struct nvt_ts_data *ts_core, bool enable)
@@ -2240,31 +1649,6 @@ static void nvt_resume_work(struct work_struct *work)
 	nvt_ts_resume(&ts_core->client->dev);
 }
 
-static void get_lockdown_info(struct work_struct *work)
-{
-	int ret = 0;
-
-	NVT_LOG("lkdown_readed = %d", ts->lkdown_readed);
-
-	if (!ts->lkdown_readed) {
-		ret = dsi_panel_lockdown_info_read(ts->lockdown_info);
-		if (ret < 0) {
-			NVT_ERR("can't get lockdown info");
-		} else {
-			NVT_LOG("Lockdown:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x\n",
-			ts->lockdown_info[0], ts->lockdown_info[1], ts->lockdown_info[2], ts->lockdown_info[3],
-			ts->lockdown_info[4], ts->lockdown_info[5], ts->lockdown_info[6], ts->lockdown_info[7]);
-		}
-		ts->lkdown_readed = true;
-		NVT_LOG("READ LOCKDOWN!!!");
-	} else {
-		NVT_LOG("use lockdown info that readed before");
-		NVT_LOG("Lockdown:0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x,0x%02x\n",
-			ts->lockdown_info[0], ts->lockdown_info[1], ts->lockdown_info[2], ts->lockdown_info[3],
-			ts->lockdown_info[4], ts->lockdown_info[5], ts->lockdown_info[6], ts->lockdown_info[7]);
-	}
-}
-
 /*******************************************************
 Description:
 	Novatek touchscreen driver probe function.
@@ -2297,10 +1681,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	}
 
 	ts->pdev = pdev;
-
-	// This to prevent the driver from messing
-	// With panel initilization
-	usleep_range(10000,10000);
 
 	for (retry = 1; retry <= 3; ++retry) {
 		ret = tmp_hold_ts_xsfer(&ts_xsfer);
@@ -2351,11 +1731,11 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	spi_set_drvdata(ts->client, ts);
 
 	/* ---prepare for spi parameter--- */
-	//if (ts->client->master->flags & SPI_MASTER_HALF_DUPLEX) {
-	//	NVT_ERR("Full duplex not supported by master\n");
-	//	ret = -EIO;
-	//	goto err_ckeck_full_duplex;
-	//}
+	if (ts->client->controller->flags & SPI_CONTROLLER_HALF_DUPLEX) {
+		NVT_ERR("Full duplex not supported by master\n");
+		ret = -EIO;
+		goto err_ckeck_full_duplex;
+	}
 	ts->client->bits_per_word = 8;
 	ts->client->mode = SPI_MODE_0;
 	ts->client->max_speed_hz = ts->spi_max_freq;
@@ -2489,17 +1869,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 
 	INIT_WORK(&ts->switch_mode_work, nvt_switch_mode_work);
 
-	pm_stay_awake(&ts->pdev->dev);
-	nvt_lockdown_wq = alloc_workqueue("nvt_lockdown_wq", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
-	if (!nvt_lockdown_wq) {
-		NVT_ERR("nvt_fwu_wq create workqueue failed\n");
-		ret = -ENOMEM;
-		goto err_create_nvt_lockdown_wq_failed;
-	}
-	INIT_DELAYED_WORK(&ts->nvt_lockdown_work, get_lockdown_info);
-	/* please make sure boot update start after display reset(RESX) sequence*/
-	queue_delayed_work(nvt_lockdown_wq, &ts->nvt_lockdown_work, msecs_to_jiffies(1000));
-
 #if WAKEUP_GESTURE
 	device_init_wakeup(&ts->input_dev->dev, 1);
 #endif
@@ -2538,14 +1907,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 	if (ret != 0) {
 		NVT_ERR("nvt flash proc init failed. ret=%d\n", ret);
 		goto err_flash_proc_init_failed;
-	}
-#endif
-
-#if NVT_TOUCH_EXT_PROC
-	ret = nvt_extra_proc_init();
-	if (ret != 0) {
-		NVT_ERR("nvt extra proc init failed. ret=%d\n", ret);
-		goto err_extra_proc_init_failed;
 	}
 #endif
 
@@ -2602,20 +1963,6 @@ static int32_t nvt_ts_probe(struct platform_device *pdev)
 		debugfs_create_file("touch_boost", 0660, ts->debugfs, ts, &nvt_touch_test_fops);
 	}
 #endif
-	nvt_cmds_panel_info();
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-			xiaomi_touch_interfaces.touch_vendor_read = nvt_touch_vendor_read;
-			xiaomi_touch_interfaces.panel_display_read = nvt_panel_display_read;
-			xiaomi_touch_interfaces.panel_vendor_read = nvt_panel_vendor_read;
-			xiaomi_touch_interfaces.panel_color_read = nvt_panel_color_read;
-			xiaomi_touch_interfaces.getModeValue = nvt_get_mode_value;
-			xiaomi_touch_interfaces.setModeValue = nvt_set_cur_value;
-			xiaomi_touch_interfaces.resetMode = nvt_reset_mode;
-			xiaomi_touch_interfaces.getModeAll = nvt_get_mode_all;
-			xiaomi_touch_interfaces.palm_sensor_write = nvt_palm_sensor_write;
-			nvt_init_touchmode_data();
-			xiaomitouch_register_modedata(&xiaomi_touch_interfaces);
-#endif
 
 	bTouchIsAwake = 1;
 	NVT_LOG("end\n");
@@ -2639,10 +1986,6 @@ err_register_early_suspend_failed:
 #endif
 	destroy_workqueue(ts->event_wq);
 err_alloc_failed:
-#if NVT_TOUCH_EXT_PROC
-nvt_extra_proc_deinit();
-err_extra_proc_init_failed:
-#endif
 #if NVT_TOUCH_PROC
 nvt_flash_proc_deinit();
 err_flash_proc_init_failed:
@@ -2710,7 +2053,7 @@ Description:
 return:
 	Executive outcomes. 0---succeed.
 *******************************************************/
-static int32_t nvt_ts_remove(struct platform_device *pdev)
+void nvt_ts_remove(struct platform_device *pdev)
 {
 	NVT_LOG("Removing driver...\n");
 
@@ -2723,9 +2066,6 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 #endif
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);
-#endif
-#if NVT_TOUCH_EXT_PROC
-	nvt_extra_proc_deinit();
 #endif
 #if NVT_TOUCH_PROC
 	nvt_flash_proc_deinit();
@@ -2773,7 +2113,7 @@ static int32_t nvt_ts_remove(struct platform_device *pdev)
 		ts = NULL;
 	}
 
-	return 0;
+	return;
 }
 
 static void nvt_ts_shutdown(struct platform_device *pdev)
@@ -2791,9 +2131,6 @@ static void nvt_ts_shutdown(struct platform_device *pdev)
 #endif
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	unregister_early_suspend(&ts->early_suspend);
-#endif
-#if NVT_TOUCH_EXT_PROC
-	nvt_extra_proc_deinit();
 #endif
 #if NVT_TOUCH_PROC
 	nvt_flash_proc_deinit();
@@ -2847,13 +2184,6 @@ static int32_t nvt_ts_suspend(struct device *dev)
 	mutex_lock(&ts->lock);
 	bTouchIsAwake = 0;
 
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-	if (ts->palm_sensor_switch) {
-		NVT_LOG("palm sensor on status, switch to off\n");
-		update_palm_sensor_value(0);
-		nvt_set_pocket_palm_switch(false);
-	}
-#endif
 	mdelay(10);
 	if (ts->db_wakeup) {
 		/* ---write command to enter "wakeup gesture mode"--- */
@@ -2941,11 +2271,7 @@ static int32_t nvt_ts_resume(struct device *dev)
 		NVT_LOG("Touch is already resume\n");
 #if NVT_TOUCH_WDT_RECOVERY
 		mutex_lock(&ts->lock);
-		if (nvt_get_dbgfw_status()) {
-			ret = nvt_update_firmware(DEFAULT_DEBUG_FW_NAME);
-		} else {
-			ret = nvt_update_firmware(ts->fw_name);
-		}
+		nvt_update_firmware(ts->firmware_name);
 		mutex_unlock(&ts->lock);
 #endif /* #if NVT_TOUCH_WDT_RECOVERY */
 		goto Exit;
@@ -2960,15 +2286,7 @@ static int32_t nvt_ts_resume(struct device *dev)
 #if NVT_TOUCH_SUPPORT_HW_RST
 	gpio_set_value(ts->reset_gpio, 1);
 #endif
-	if (nvt_get_dbgfw_status()) {
-		ret = nvt_update_firmware(DEFAULT_DEBUG_FW_NAME);
-		if (ret < 0) {
-			NVT_ERR("use built-in fw");
-			ret = nvt_update_firmware(ts->fw_name);
-		}
-	} else {
-		ret = nvt_update_firmware(ts->fw_name);
-	}
+	ret = nvt_update_firmware(ts->firmware_name);
 	if (ret)
 		NVT_ERR("download firmware failed\n");
 	nvt_check_fw_reset_state(RESET_STATE_REK);
@@ -2983,13 +2301,6 @@ static int32_t nvt_ts_resume(struct device *dev)
 #endif /* #if NVT_TOUCH_ESD_PROTECT */
 
 	bTouchIsAwake = 1;
-#ifdef CONFIG_TOUCHSCREEN_XIAOMI_TOUCHFEATURE
-	NVT_LOG("palm_sensor_switch=%d", ts->palm_sensor_switch);
-	if (ts->palm_sensor_switch) {
-		NVT_LOG("palm sensor on status, switch to on\n");
-		nvt_set_pocket_palm_switch(true);
-	}
-#endif
 	mutex_unlock(&ts->lock);
 	//dsi_panel_doubleclick_enable(!!ts->db_wakeup);/*if true, dbclick work until next suspend*/
 	if (likely(ts->ic_state == NVT_IC_RESUME_IN))
@@ -3021,17 +2332,17 @@ static int nvt_drm_notifier_callback(struct notifier_block *self, unsigned long 
 
 	if (evdata && ts_data) {
 		blank = &(evdata->data);
-		NVT_LOG("%s: event:%lu,blank:%u\n", event, blank);
+		//NVT_LOG("%s: event:%lu,blank:%u\n", event, blank);
 
 		if (event == DRM_EARLY_EVENT_BLANK) {
 			if (*blank == DRM_BLANK_POWERDOWN) {
-				NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
+				//NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
 				flush_workqueue(ts_data->event_wq);
 				nvt_ts_suspend(&ts_data->client->dev);
 			}
 		} else if (event == DRM_EVENT_BLANK) {
 			if (*blank == DRM_BLANK_UNBLANK) {
-				NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
+				//NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
 				flush_workqueue(ts_data->event_wq);
 				queue_work(ts_data->event_wq, &ts_data->resume_work);
 			}
@@ -3126,12 +2437,14 @@ static const struct platform_device_id nvt_ts_id[] = {
 	{ NVT_SPI_NAME, 0 },
 	{ }
 };
+MODULE_DEVICE_TABLE(platform, nvt_ts_id);
 
 #ifdef CONFIG_OF
 static struct of_device_id nvt_match_table[] = {
 	{ .compatible = "novatek,NVT-ts-spi",},
 	{ },
 };
+MODULE_DEVICE_TABLE(of, nvt_match_table);
 #endif
 
 static struct platform_driver nvt_driver = {
@@ -3151,23 +2464,6 @@ static struct platform_driver nvt_driver = {
 	},
 };
 
-static bool nvt_off_charger_mode(void)
-{
-	bool charger_mode = false;
-	char charger_node[8] = {'\0'};
-	char *chose = (char *) strnstr(saved_command_line,
-				"androidboot.mode=", strlen(saved_command_line));
-	if (chose) {
-		memcpy(charger_node, (chose + strlen("androidboot.mode=")),
-			sizeof(charger_node) - 1);
-		NVT_LOG("%s: charger_node is %s\n", __func__, charger_node);
-		if (!strncmp(charger_node, "charger", strlen("charger"))) {
-			charger_mode = true;
-		}
-	}
-	return charger_mode;
-}
-
 /*******************************************************
 Description:
 	Driver Install function.
@@ -3179,10 +2475,6 @@ static int32_t __init nvt_driver_init(void)
 	int32_t ret = 0;
 
 	NVT_LOG("start\n");
-	if (nvt_off_charger_mode()) {
-		NVT_LOG("off_charger states, %s exit", __func__);
-		return 0;
-	}
 
 	/* ---add platform driver--- */
 	ret = platform_driver_register(&nvt_driver);
@@ -3209,6 +2501,5 @@ static void __exit nvt_driver_exit(void)
 }
 late_initcall(nvt_driver_init);
 
-module_param_named(touch_fw_override, touch_fw_override, int, 0664);
 MODULE_DESCRIPTION("Novatek Touchscreen Driver");
 MODULE_LICENSE("GPL");
