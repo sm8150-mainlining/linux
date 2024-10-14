@@ -13,3 +13,5 @@
 };
 
 &panel { compatible = "huaxing,nt36672c"; };
+
+&nt36672c { firmware-name = "j20s_novatek_ts_fw02.bin"; };

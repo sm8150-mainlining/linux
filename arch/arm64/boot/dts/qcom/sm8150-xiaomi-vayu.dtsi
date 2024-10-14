@@ -420,6 +420,18 @@
 	status = "okay";
 };
 
+&gpi_dma0 {
+	status = "okay";
+};
+
+&gpi_dma1 {
+	status = "okay";
+};
+
+&gpi_dma2 {
+	status = "okay";
+};
+
 &gpu {
 	status = "okay";
 
@@ -556,6 +568,10 @@
 	status = "okay";
 };
 
+&qup_spi17_default {
+	pins = "gpio55", "gpio56", "gpio57";
+};
+
 &qupv3_id_0 {
 	status = "okay";
 };
@@ -600,8 +616,83 @@
         cd-gpios = <&tlmm 96 GPIO_ACTIVE_HIGH>;
 };
 
+&spi17 {
+	status = "ok";
+	touch_spi@0 {
+		compatible = "xiaomi,spi-for-tp";
+		reg = <0>;
+		status = "ok";
+		spi-max-frequency = <10000000>;  //10M
+	};
+};
+
+&soc {
+	/* TODO: get rid of xiaomi spi and convert this driver to a spi driver */
+	nt36672c: novatek_nt36672c {
+		compatible = "novatek,NVT-ts-spi";
+		status = "ok";
+
+		spi-max-frequency = <10000000>; // 10M
+
+		novatek,reset-gpio = <&tlmm 12 GPIO_ACTIVE_HIGH>;
+		novatek,irq-gpio = <&tlmm 122 IRQ_TYPE_NONE>;
+
+		pinctrl-names = "pmx_ts_active", "pmx_ts_suspend";
+		pinctrl-0 = <&ts_int_active &ts_reset_active &ts_cs_active>;
+		pinctrl-1 = <&ts_int_suspend &ts_reset_suspend &ts_cs_suspend>;
+
+		/* 672C */
+		novatek,swrst-n8-addr = <0x03F0FE>;
+		novatek,spi-rd-fast-addr = <0x03F310>;
+	};
+};
+
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <126 4>;
+
+	ts_int_active: ts_int_active {
+		pins = "gpio122";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-pull-down;
+	};
+
+	ts_reset_active: ts_reset_active {
+		pins = "gpio12";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-pull-up;
+	};
+
+	ts_cs_active: ts_cs_active {
+		pins = "gpio58";
+		function = "qup17";
+		drive-strength = <6>;
+		bias-disable;
+	};
+
+	ts_cs_suspend: ts_cs_suspend {
+		pins = "gpio58";
+		function = "gpio";
+		drive-strength = <6>;
+		bias-pull-down;
+		output-low;
+	};
+
+	ts_int_suspend: ts_int_suspend {
+		pins = "gpio122";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-disable;
+		input-enable;
+	};
+
+	ts_reset_suspend: ts_reset_suspend {
+		pins = "gpio12";
+		function = "gpio";
+		drive-strength = <16>;
+		bias-disable;
+	};
 	
 	sdc2_on: sdc2-on-state {
 		clk-pins {
