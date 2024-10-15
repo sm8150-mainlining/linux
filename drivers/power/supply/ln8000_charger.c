@@ -1042,7 +1042,7 @@ static void psy_chg_get_ti_alarm_status(struct work_struct *work)
     }
 
     ln8000_bulk_read_reg(info, LN8000_REG_SYS_STS, val, 4);
-    ln_info("adc_vin=%d(th=%d), adc_iin=%d(th=%d), adc_vbat=%d(th=%d), v_offset=%d\n", 
+    ln_dbg("adc_vin=%d(th=%d), adc_iin=%d(th=%d), adc_vbat=%d(th=%d), v_offset=%d\n", 
             info->vbus_uV / 1000, info->vin_ovp_alarm_th / 1000, 
             info->iin_uA / 1000, info->iin_ocp_alarm_th / 1000, 
             info->vbat_uV / 1000, info->vbat_ovp_alarm_th / 1000,
