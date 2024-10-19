@@ -341,7 +341,7 @@ static void dsi_mgr_bridge_post_disable(struct drm_bridge *bridge)
 
 	notify_data.data = DRM_BLANK_POWERDOWN;
 	notify_data.id = MSM_DRM_PRIMARY_DISPLAY;
-	msm_drm_notifier_call_chain(MSM_DRM_EVENT_BLANK, &notify_data);
+	msm_drm_notifier_call_chain(DRM_EARLY_EVENT_BLANK, &notify_data);
 
 	/*
 	 * Do nothing with the host if it is slave-DSI in case of bonded DSI.

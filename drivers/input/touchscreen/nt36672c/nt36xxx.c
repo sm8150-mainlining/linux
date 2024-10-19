@@ -2332,22 +2332,22 @@ static int nvt_drm_notifier_callback(struct notifier_block *self, unsigned long 
 
 	if (evdata && ts_data) {
 		blank = &(evdata->data);
-		//NVT_LOG("%s: event:%lu,blank:%u\n", event, blank);
+		NVT_LOG("event:%lu,blank:%d\n", event, *blank);
 
-		if (event == DRM_EARLY_EVENT_BLANK) {
-			if (*blank == DRM_BLANK_POWERDOWN) {
-				//NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
+		if (event == 1) {
+			if (*blank == 6) {
+				NVT_LOG("event:%lu,blank:%d\n", event, *blank);
 				flush_workqueue(ts_data->event_wq);
 				nvt_ts_suspend(&ts_data->client->dev);
 			}
-		} else if (event == DRM_EVENT_BLANK) {
-			if (*blank == DRM_BLANK_UNBLANK) {
-				//NVT_LOG("event=%lu, *blank=%d\n", event, *blank);
-				flush_workqueue(ts_data->event_wq);
-				queue_work(ts_data->event_wq, &ts_data->resume_work);
-			}
-		}
 
+			if (*blank == 1) {
+                                NVT_LOG("event:%lu,blank:%d\n", event, *blank);
+                                flush_workqueue(ts_data->event_wq);
+                                queue_work(ts_data->event_wq, &ts_data->resume_work);
+                        }
+
+		}
 	}
 	return NOTIFY_OK;
 }
