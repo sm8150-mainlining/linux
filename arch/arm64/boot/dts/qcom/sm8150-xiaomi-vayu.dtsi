@@ -686,6 +686,8 @@
 	};
 };
 
+/delete-node/ &qup_uart13_default;
+
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <126 4>;
 
@@ -858,6 +860,36 @@
 			 * is floating which may cause spurious wakeups.
 			 */
 			pins = "gpio46";
+			bias-pull-up;
+		};
+	};
+
+	qup_uart13_default: qup-uart13-default-state {
+		cts-pins {
+			pins = "gpio43";
+			function = "qup13";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+
+		rts-pins {
+			pins = "gpio44";
+			function = "qup13";
+			drive-strength = <2>;
+			bias-pull-down;
+		};
+
+		tx-pins {
+			pins = "gpio45";
+			function = "qup13";
+			drive-strength = <2>;
+			bias-pull-up;
+		};
+
+		rx-pins {
+			pins = "gpio46";
+			function = "qup13";
+			drive-strength = <2>;
 			bias-pull-up;
 		};
 	};
