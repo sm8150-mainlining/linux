@@ -512,6 +512,25 @@
 	};
 };
 
+&i2c9 {
+	status = "okay";
+
+	nfc@28 {
+		compatible = "nxp,nxp-nci-i2c";
+		reg = <0x28>;
+
+		interrupt-parent = <&tlmm>;
+		interrupts = <47 IRQ_TYPE_EDGE_RISING>;
+
+		enable-gpios = <&tlmm 41 GPIO_ACTIVE_HIGH>;
+		firmware-gpios = <&tlmm 48 GPIO_ACTIVE_HIGH>;
+	
+		pinctrl-names = "default", "sleep";
+		pinctrl-0 = <&nfc_default>;
+		pinctrl-1 = <&nfc_sleep &nfc_int_suspend>;
+	};
+};
+
 &mdss {
 	status = "okay";
 };
@@ -815,6 +834,29 @@
 		bias-disable;
 	};
 	
+
+	nfc_default: nfc-default-state {
+		pins = "gpio47", "gpio48", "gpio102", "gpio113";
+		function = "gpio";
+		drive-strength = <2>;
+		bias-pull-up;
+	};
+
+	nfc_sleep: nfc-sleep-state {
+		pins = "gpio48", "gpio102", "gpio113";
+                function = "gpio";
+                drive-strength = <2>;
+                bias-disable;
+	};
+
+	// separated due to different bias
+	nfc_int_suspend: nfc-int-suspend-state {
+		pins = "gpio47";
+		function = "gpio";
+                drive-strength = <2>;
+                bias-pull-up;
+	};
+
 	sdc2_on: sdc2-on-state {
 		clk-pins {
 			pins = "sdc2_clk";
