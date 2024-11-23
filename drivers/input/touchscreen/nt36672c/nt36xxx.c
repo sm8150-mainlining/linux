@@ -65,10 +65,12 @@ static int esd_check_scale = 8;
 
 struct nvt_ts_data *ts;
 
+#ifndef MODULE
 #if BOOT_UPDATE_FIRMWARE
 static struct workqueue_struct *nvt_fwu_wq;
 static struct workqueue_struct *nvt_lockdown_wq;
 extern void Boot_Update_Firmware(struct work_struct *work);
+#endif
 #endif
 
 #ifdef CONFIG_DRM
@@ -1752,6 +1754,8 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	init_completion(&ts->dev_pm_suspend_completion);
 
 #if BOOT_UPDATE_FIRMWARE
+	// We dont need a firmware boot delay if the driver is a module
+	#ifndef MODULE
 	nvt_fwu_wq = alloc_workqueue("nvt_fwu_wq", WQ_UNBOUND | WQ_MEM_RECLAIM, 1);
 	if (!nvt_fwu_wq) {
 		NVT_ERR("nvt_fwu_wq create workqueue failed\n");
@@ -1761,6 +1765,13 @@ static int32_t nvt_ts_probe(struct spi_device *client)
 	INIT_DELAYED_WORK(&ts->nvt_fwu_work, Boot_Update_Firmware);
 	/* please make sure boot update start after display reset(RESX) sequence */
 	queue_delayed_work(nvt_fwu_wq, &ts->nvt_fwu_work, msecs_to_jiffies(10000));
+	#endif
+
+	#ifdef MODULE
+	ret = nvt_update_firmware(ts->firmware_name);
+	if (ret)
+		NVT_ERR("download firmware failed\n");
+	#endif
 #endif
 
 	NVT_LOG("NVT_TOUCH_ESD_PROTECT is %d\n", NVT_TOUCH_ESD_PROTECT);
@@ -1861,6 +1872,8 @@ err_flash_proc_init_failed:
 	}
 err_create_nvt_esd_check_wq_failed:
 #endif
+
+#ifndef MODULE
 #if BOOT_UPDATE_FIRMWARE
 	if (nvt_fwu_wq) {
 		cancel_delayed_work_sync(&ts->nvt_fwu_work);
@@ -1873,6 +1886,7 @@ err_create_nvt_fwu_wq_failed:
 		destroy_workqueue(nvt_lockdown_wq);
 		nvt_lockdown_wq = NULL;
 	}
+#endif
 #endif
 err_int_request_failed:
 	input_unregister_device(ts->input_dev);
@@ -1928,12 +1942,14 @@ void nvt_ts_remove(struct spi_device *client)
 	}
 #endif
 
+#ifndef MODULE
 #if BOOT_UPDATE_FIRMWARE
 	if (nvt_fwu_wq) {
 		cancel_delayed_work_sync(&ts->nvt_fwu_work);
 		destroy_workqueue(nvt_fwu_wq);
 		nvt_fwu_wq = NULL;
 	}
+#endif
 #endif
 
 #if WAKEUP_GESTURE
