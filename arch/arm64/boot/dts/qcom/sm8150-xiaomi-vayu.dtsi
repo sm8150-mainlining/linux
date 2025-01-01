@@ -455,6 +455,12 @@
 	 * To check what charging chip you have you can use apps like
 	 * HW info in a rooted android environment.
 	 */
+	bq25970_charger: bq25970_charger@66 {
+		compatible = "ti,bq2597x-standalone";
+		reg = <0x66>;
+		status = "okay";
+	};
+
 	ln8000_charger: ln8000_charger@51 {
 		compatible = "lionsemi,ln8000";
 		reg = <0x51>;
@@ -1060,10 +1066,7 @@
 };
 
 &usb_1 {
-	status = "okay";
-};
-
-&usb_2 {
+	qcom,select-utmi-as-pipe-clk;
 	status = "okay";
 };
 
@@ -1073,10 +1076,9 @@
 	maximum-speed = "high-speed";
 	dr_mode = "otg";
 	usb-role-switch;
-};
-
-&usb_2_dwc3 {
-	dr_mode = "host";
+	/* Remove USB3 phy */
+	phys = <&usb_1_hsphy>;
+	phy-names = "usb2-phy";
 };
 
 &usb_1_hsphy {
@@ -1084,25 +1086,6 @@
 	vdda-pll-supply = <&vreg_l5a_0p8>;
 	vdda18-supply = <&vreg_l12a_1p8>;
 	vdda33-supply = <&vreg_l2a_3p1>;
-};
-
-&usb_2_hsphy {
-	status = "okay";
-	vdda-pll-supply = <&vreg_l5a_0p8>;
-	vdda18-supply = <&vreg_l12a_1p8>;
-	vdda33-supply = <&vreg_l2a_3p1>;
-};
-
-&usb_1_qmpphy {
-	status = "okay";
-	vdda-phy-supply = <&vreg_l3c_1p2>;
-	vdda-pll-supply = <&vreg_l5a_0p8>;
-};
-
-&usb_2_qmpphy {
-	status = "okay";
-	vdda-phy-supply = <&vreg_l3c_1p2>;
-	vdda-pll-supply = <&vreg_l5a_0p8>;
 };
 
 &usb_1_dwc3_hs {
@@ -1117,10 +1100,10 @@
 	vdd-rx-supply = <&vreg_s4a_1p8>;
 	vdd-io-supply = <&vreg_s4a_1p8>;
 
-	qcom,micbias1-microvolt = <1800000>;
-	qcom,micbias2-microvolt = <2750000>;
-	qcom,micbias3-microvolt = <1800000>;
-	qcom,micbias4-microvolt = <1800000>;
+	qcom,micbias1-microvolt = <2700000>;
+	qcom,micbias2-microvolt = <2700000>;
+	qcom,micbias3-microvolt = <2700000>;
+	qcom,micbias4-microvolt = <2700000>;
 
 	qcom,hphl-jack-type-normally-open;
 	qcom,ground-jack-type-normally-open;
