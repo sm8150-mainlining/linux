@@ -531,6 +531,21 @@
 	};
 };
 
+&spi1 {
+	status = "okay";
+
+	irled@0 {
+		compatible = "ir-spi-led";
+		reg = <0x0>;
+		status = "okay";
+		
+		spi-max-frequency = <19200000>;
+		power-supply = <&vreg_bob>;
+		duty-cycle = /bits/ 8 <60>;
+		led-active-low;
+	};
+};
+
 &mdss {
 	status = "okay";
 };
