@@ -295,7 +295,7 @@ static int tianma_nt36672c_probe(struct mipi_dsi_device *dsi)
 	ctx->dsc.dsc_version_major = 1;
 	ctx->dsc.dsc_version_minor = 1;
 
-	/* TODO: Pass slice_per_pkt = 2 */
+	ctx->dsi->dsc_slice_per_pkt = 2;
 	ctx->dsc.slice_height = 20;
 	ctx->dsc.slice_width = 540;
 	/*
