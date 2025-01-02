@@ -105,13 +105,7 @@ static int tianma_nt36672c_on(struct tianma_nt36672c *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x37, 0xf2);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x38, 0xf2);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x39, 0xf2);
-
-        ret = mipi_dsi_dcs_set_pixel_format_multi(&dsi_ctx, 0xef);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set pixel format: %d\n", ret);
-		return ret;
-	}
-
+	mipi_dsi_dcs_set_pixel_format_multi(&dsi_ctx, 0xef);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x3b, 0xec);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_SET_3D_CONTROL, 0xe9);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x3f, 0xe5);
@@ -130,13 +124,7 @@ static int tianma_nt36672c_on(struct tianma_nt36672c *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x4e, 0xb2);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x4f, 0x99);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x50, 0x80);
-
-	ret = mipi_dsi_dcs_set_display_brightness_multi(&dsi_ctx, 0x0068);
-	if (ret < 0) {
-		dev_err(dev, "Failed to set display brightness: %d\n", ret);
-		return ret;
-	}
-
+	mipi_dsi_dcs_set_display_brightness_multi(&dsi_ctx, 0x0068);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x52, 0x66);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY,
 				     0x66);
@@ -165,24 +153,12 @@ static int tianma_nt36672c_on(struct tianma_nt36672c *ctx)
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xff, 0x10);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xfb, 0x01);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xc0, 0x03);
-
-	ret = mipi_dsi_dcs_set_display_brightness_multi(&dsi_ctx, 0xb50d);
-        if (ret < 0) {
-                dev_err(dev, "Failed to set display brightness: %d\n", ret);
-                return ret;
-        }
-
-	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY,
+	mipi_dsi_dcs_set_display_brightness_multi(&dsi_ctx, 0xb50d);
+      	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, MIPI_DCS_WRITE_CONTROL_DISPLAY,
 				     0x24);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xff, 0x10);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x11, 0x00);
-
-	ret = mipi_dsi_msleep(&dsi_ctx, 70);
-        if (ret < 0) {
-                dev_err(dev, "Failed to enter sleep mode: %d\n", ret);
-                return ret;
-        }
-
+	mipi_dsi_msleep(&dsi_ctx, 70);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0x29, 0x00);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xff, 0x27);
 	mipi_dsi_dcs_write_seq_multi(&dsi_ctx, 0xfb, 0x01);
