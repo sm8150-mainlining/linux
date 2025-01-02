@@ -664,9 +664,14 @@
 };
 
 &q6afedai {
-	qi2s@22 {
-		reg = <QUATERNARY_MI2S_RX>;
-		qcom,sd-lines = <0>;
+	dai@72 {
+		reg = <QUATERNARY_TDM_RX_0>;
+		qcom,tdm-sync-mode = <1>;
+		qcom,tdm-sync-src = <1>;
+		qcom,tdm-data-out = <0>;
+		qcom,tdm-invert-sync = <1>;
+		qcom,tdm-data-delay = <1>;
+		qcom,tdm-data-align = <0>;
 	};
 };
 
@@ -748,15 +753,17 @@
 };
 
 &sound {
-	compatible = "qcom,sdm845-sndcard";
-	pinctrl-0 = <&quat_mi2s_active
-		&quat_mi2s_sd0_active>;
+	compatible = "qcom,sm8150-sndcard";
+	pinctrl-0 = <&quat_tdm_active
+		&quat_tdm_sd1_active>;
 	pinctrl-names = "default";
-	model = "vayu";
+	model = "xiaomi-vayu";
 
 	audio-routing = "RX_BIAS", "MCLK",
 		"AMIC1", "MIC BIAS3",
-		"AMIC3", "MIC BIAS1";
+		"AMIC3", "MIC BIAS1",
+		"MultiMedia1 Playback", "Right SPK",
+		"MultiMedia1 Playback", "Left SPK";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -772,10 +779,10 @@
 		};
 	};
 
-	i2s-dai-link {
-		link-name = "I2S Playback";
+	speaker-dai-link {
+		link-name = "Speaker Playback";
 		cpu {
-			sound-dai = <&q6afedai QUATERNARY_MI2S_RX>;
+			sound-dai = <&q6afedai QUATERNARY_TDM_RX_0>;
 		};
 
 		platform {
@@ -806,17 +813,17 @@
 
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <126 4>;
-
-	quat_mi2s_active: quat-mi2s-active-state {
+	
+	quat_tdm_active: quat-tdm-active-state {
 		pins = "gpio137", "gpio138";
 		function = "qua_mi2s";
 		drive-strength = <8>;
 		bias-disable;
 		output-high;
 	};
-			
-	quat_mi2s_sd0_active: quat-mi2s-sd0-active-state {
-		pins = "gpio139";
+
+	quat_tdm_sd1_active: quat-tdm-sd1-active-state {
+		pins = "gpio140";
 		function = "qua_mi2s";
 		drive-strength = <8>;
 		bias-disable;
