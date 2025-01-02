@@ -37,11 +37,9 @@ static unsigned int tdm_slot_offset[8] = {0, 4, 8, 12, 16, 20, 24, 28};
 
 static const struct {
 	unsigned int rx[1];
-} cs35l41_tdm_channel_map[] = {
-	{.rx = {6}}, /* BR */
-	{.rx = {7}}, /* TR */
-	{.rx = {6}}, /* BL */
-	{.rx = {7}}, /* TL */
+} tas256x_tdm_channel_map[] = {
+	{.rx = {0}}, /* Right */
+	{.rx = {1}}, /* Left */
 };
 
 static int sm8150_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
@@ -179,8 +177,8 @@ static int sm8150_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 
 		/* setup channel map */
 		ret = snd_soc_dai_set_channel_map(codec_dai, 0, NULL,
-						  ARRAY_SIZE(cs35l41_tdm_channel_map[j].rx),
-						  (unsigned int *)cs35l41_tdm_channel_map[j].rx);
+						  ARRAY_SIZE(tas256x_tdm_channel_map[j].rx),
+						  (unsigned int *)tas256x_tdm_channel_map[j].rx);
 		if (ret < 0) {
 			dev_err(codec_dai->dev, "fail to set channel map, ret %d\n",
 				ret);
