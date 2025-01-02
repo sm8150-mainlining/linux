@@ -421,7 +421,7 @@
 
 	zap-shader {
 		memory-region = <&gpu_mem>;
-		firmware-name = "qcom/sm8150/xiaomi/vayu/a640_zap.mbn";
+		firmware-name = "qcom/a640_zap.mbn";
 	};
 };
 
