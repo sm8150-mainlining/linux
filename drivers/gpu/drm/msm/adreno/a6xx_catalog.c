@@ -1048,6 +1048,7 @@ MODULE_FIRMWARE("qcom/a630_sqe.fw");
 MODULE_FIRMWARE("qcom/a630_gmu.bin");
 MODULE_FIRMWARE("qcom/a630_zap.mbn");
 MODULE_FIRMWARE("qcom/a640_gmu.bin");
+MODULE_FIRMWARE("qcom/a640_zap.mbn");
 MODULE_FIRMWARE("qcom/a650_gmu.bin");
 MODULE_FIRMWARE("qcom/a650_sqe.fw");
 MODULE_FIRMWARE("qcom/a660_gmu.bin");
