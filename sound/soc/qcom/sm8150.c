@@ -18,7 +18,12 @@
 #include "common.h"
 
 #define DRIVER_NAME		"sm8150"
-
+#define TDM_BCLK_RATE		12288000
+#define MI2S_BCLK_RATE		1536000
+#define LEFT_SPK_TDM_TX_MASK    0x30
+#define RIGHT_SPK_TDM_TX_MASK   0xC0
+#define SPK_TDM_RX_MASK         0x03
+#define NUM_TDM_SLOTS           8
 #define SLIM_MAX_TX_PORTS 16
 #define SLIM_MAX_RX_PORTS 13
 #define WCD934X_DEFAULT_MCLK_RATE	9600000
@@ -34,13 +39,6 @@ struct sm8150_snd_data {
 };
 
 static unsigned int tdm_slot_offset[8] = {0, 4, 8, 12, 16, 20, 24, 28};
-
-static const struct {
-	unsigned int rx[1];
-} tas256x_tdm_channel_map[] = {
-	{.rx = {0}}, /* Right */
-	{.rx = {1}}, /* Left */
-};
 
 static int sm8150_be_hw_params_fixup(struct snd_soc_pcm_runtime *rtd,
 				     struct snd_pcm_hw_params *params)
@@ -110,6 +108,9 @@ static int sm8150_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	unsigned int slot_mask;
 
 	switch (params_format(params)) {
+	case SNDRV_PCM_FORMAT_S16_LE:
+		slot_width = 16;
+		break;
 	case SNDRV_PCM_FORMAT_S24_LE:
 		slot_width = 32;
 		break;
@@ -120,7 +121,7 @@ static int sm8150_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 	}
 
 	channels = params_channels(params);
-	slot_mask = 0x44;// 0x0000FFFF >> (16-channels);
+	slot_mask = 0x3;
 	if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
 		ret = snd_soc_dai_set_tdm_slot(cpu_dai, 0, slot_mask,
 				8, slot_width);
@@ -176,13 +177,28 @@ static int sm8150_tdm_snd_hw_params(struct snd_pcm_substream *substream,
 		}
 
 		/* setup channel map */
-		ret = snd_soc_dai_set_channel_map(codec_dai, 0, NULL,
-						  ARRAY_SIZE(tas256x_tdm_channel_map[j].rx),
-						  (unsigned int *)tas256x_tdm_channel_map[j].rx);
-		if (ret < 0) {
-			dev_err(codec_dai->dev, "fail to set channel map, ret %d\n",
-				ret);
-			return ret;
+		if (!strcmp(codec_dai->component->name_prefix, "Left")) {
+			ret = snd_soc_dai_set_tdm_slot(
+					codec_dai, LEFT_SPK_TDM_TX_MASK,
+					SPK_TDM_RX_MASK, NUM_TDM_SLOTS,
+					slot_width);
+			if (ret < 0) {
+				dev_err(rtd->dev,
+					"DEV0 TDM slot err:%d\n", ret);
+				return ret;
+			}
+		}
+
+		if (!strcmp(codec_dai->component->name_prefix, "Right")) {
+			ret = snd_soc_dai_set_tdm_slot(
+					codec_dai, RIGHT_SPK_TDM_TX_MASK,
+					SPK_TDM_RX_MASK, NUM_TDM_SLOTS,
+					slot_width);
+			if (ret < 0) {
+				dev_err(rtd->dev,
+					"DEV1 TDM slot err:%d\n", ret);
+				return ret;
+			}
 		}
 	}
 
@@ -204,6 +220,8 @@ static int sm8150_snd_hw_params(struct snd_pcm_substream *substream,
 		break;
 	case SLIMBUS_0_RX...SLIMBUS_6_TX:
 		ret = sm8150_slim_snd_hw_params(substream, params);
+		break;
+	case QUATERNARY_MI2S_RX:
 		break;
 	default:
 		pr_err("%s: invalid dai id 0x%x\n", __func__, cpu_dai->id);
@@ -304,12 +322,18 @@ static int sm8150_snd_startup(struct snd_pcm_substream *substream)
 	struct snd_soc_dai *codec_dai = snd_soc_rtd_to_codec(rtd, 0);
 
 	switch (cpu_dai->id) {
+	case QUATERNARY_MI2S_RX:
+                 snd_soc_dai_set_sysclk(cpu_dai,
+			 Q6AFE_LPASS_CLK_ID_QUAD_MI2S_IBIT,
+                         MI2S_BCLK_RATE, SNDRV_PCM_STREAM_PLAYBACK);
+                 snd_soc_dai_set_fmt(cpu_dai, fmt);
+                break;
 	case QUATERNARY_TDM_RX_0:
 		codec_dai_fmt |= SND_SOC_DAIFMT_NB_NF | SND_SOC_DAIFMT_DSP_A;
 		if (++(data->quat_tdm_clk_count) == 1) {
 			snd_soc_dai_set_sysclk(cpu_dai,
 				Q6AFE_LPASS_CLK_ID_QUAD_TDM_IBIT,
-				12288000, SNDRV_PCM_STREAM_PLAYBACK);
+				TDM_BCLK_RATE, SNDRV_PCM_STREAM_PLAYBACK);
 		}
 		snd_soc_dai_set_fmt(cpu_dai, fmt);
 		snd_soc_dai_set_fmt(codec_dai, codec_dai_fmt);
@@ -340,7 +364,7 @@ static void sm8150_snd_shutdown(struct snd_pcm_substream *substream)
 		}
 		break;
 	case SLIMBUS_0_RX...SLIMBUS_6_TX:
-	case QUATERNARY_MI2S_RX:
+        case QUATERNARY_MI2S_RX:
 		break;
 	default:
 		pr_err("%s: invalid dai id 0x%x\n", __func__, cpu_dai->id);
