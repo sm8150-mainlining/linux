@@ -664,14 +664,9 @@
 };
 
 &q6afedai {
-	dai@72 {
-		reg = <QUATERNARY_TDM_RX_0>;
-		qcom,tdm-sync-mode = <1>;
-		qcom,tdm-sync-src = <1>;
-		qcom,tdm-data-out = <0>;
-		qcom,tdm-invert-sync = <1>;
-		qcom,tdm-data-delay = <1>;
-		qcom,tdm-data-align = <0>;
+	qi2s@22 {
+		reg = <QUATERNARY_MI2S_RX>;
+		qcom,sd-lines = <0>;
 	};
 };
 
@@ -680,9 +675,9 @@
 		reg = <0>;
 	};
 
-	dai@1 {
-		reg = <1>;
-	};
+//	dai@1 {
+//		reg = <1>;
+//	};
 };
 
 &qupv3_id_0 {
@@ -754,16 +749,16 @@
 
 &sound {
 	compatible = "qcom,sm8150-sndcard";
-	pinctrl-0 = <&quat_tdm_active
-		&quat_tdm_sd1_active>;
+	pinctrl-0 = <&quat_mi2s_active
+		&quat_mi2s_sd0_active>;
 	pinctrl-names = "default";
 	model = "xiaomi-vayu";
 
-	audio-routing = "RX_BIAS", "MCLK",
-		"AMIC1", "MIC BIAS3",
-		"AMIC3", "MIC BIAS1",
-		"MultiMedia1 Playback", "Right SPK",
-		"MultiMedia1 Playback", "Left SPK";
+//	audio-routing = "RX_BIAS", "MCLK",
+//		"AMIC1", "MIC BIAS3",
+//		"AMIC3", "MIC BIAS1",
+	audio-routing = "MultiMedia1 Playback", "Right OUT",
+		"MultiMedia1 Playback", "Left OUT";
 
 	mm1-dai-link {
 		link-name = "MultiMedia1";
@@ -772,17 +767,17 @@
 		};
 	};
 
-	mm2-dai-link {
-		link-name = "MultiMedia2";
-		cpu {
-			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>;
-		};
-	};
+//	mm2-dai-link {
+//		link-name = "MultiMedia2";
+//		cpu {
+//			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>;
+//		};
+//	};
 
 	speaker-dai-link {
 		link-name = "Speaker Playback";
 		cpu {
-			sound-dai = <&q6afedai QUATERNARY_TDM_RX_0>;
+			sound-dai = <&q6afedai QUATERNARY_MI2S_RX>;
 		};
 
 		platform {
@@ -795,26 +790,26 @@
 	};
 
 	//T_MIC/B_MIC
-	slimcap-dai-link {
-		link-name = "SLIM Capture 1";
-		cpu {
-			sound-dai = <&q6afedai SLIMBUS_0_TX>;
-		};
-
-		platform {
-			sound-dai = <&q6routing>;
-		};
-
-		codec {
-			sound-dai = <&wcd9340 1>; /* AIF1_CAP */
-		};
-	};
+//	slimcap-dai-link {
+//		link-name = "SLIM Capture 1";
+//		cpu {
+//			sound-dai = <&q6afedai SLIMBUS_0_TX>;
+//		};
+//
+//		platform {
+//			sound-dai = <&q6routing>;
+//		};
+//
+//		codec {
+//			sound-dai = <&wcd9340 1>; /* AIF1_CAP */
+//		};
+//	};
 };
 
 &tlmm {
 	gpio-reserved-ranges = <0 4>, <126 4>;
 	
-	quat_tdm_active: quat-tdm-active-state {
+	quat_mi2s_active: quat-mi2s-active-state {
 		pins = "gpio137", "gpio138";
 		function = "qua_mi2s";
 		drive-strength = <8>;
@@ -822,12 +817,12 @@
 		output-high;
 	};
 
-	quat_tdm_sd1_active: quat-tdm-sd1-active-state {
-		pins = "gpio140";
-		function = "qua_mi2s";
-		drive-strength = <8>;
-		bias-disable;
-	};
+	quat_mi2s_sd0_active: quat-mi2s-sd0-active-state {
+                pins = "gpio139";
+                function = "qua_mi2s";
+                drive-strength = <8>;
+                bias-disable;
+        };
 
 	ts_int_active: ts_int_active {
 		pins = "gpio122";
