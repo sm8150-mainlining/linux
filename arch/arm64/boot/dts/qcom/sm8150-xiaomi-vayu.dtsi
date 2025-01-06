@@ -474,7 +474,7 @@
 	status = "okay";
 
 	tas2562: codec@4c { /* SPK */
-		compatible = "ti,tas2562";
+		compatible = "xiaomi,tas2562";
 		reg = <0x4c>;
 		#sound-dai-cells = <1>;
 		interrupt-parent = <&tlmm>;
@@ -482,11 +482,12 @@
 		shutdown-gpios = <&tlmm 92 GPIO_ACTIVE_HIGH>;
 		ti,imon-slot-no = <0>;
 		ti,vmon-slot-no = <2>;
+		ti,rx-slot-len = <16>;
 		sound-name-prefix = "Right";
 	};
 
 	tas2564: codec@4d { /* EAR */
-		compatible = "ti,tas2564";
+		compatible = "xiaomi,tas2564";
 		reg = <0x4d>;
 		#sound-dai-cells = <1>;
 		interrupt-parent = <&tlmm>;
@@ -494,6 +495,7 @@
 		shutdown-gpios = <&tlmm 89 GPIO_ACTIVE_HIGH>;
 		ti,imon-slot-no = <1>;
 		ti,vmon-slot-no = <3>;
+		ti,rx-slot-len = <16>;
 		sound-name-prefix = "Left";
 	};
 };
