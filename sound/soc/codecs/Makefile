@@ -400,6 +400,7 @@ snd-soc-simple-amplifier-y := simple-amplifier.o
 snd-soc-tpa6130a2-y := tpa6130a2.o
 snd-soc-tas2552-y := tas2552.o
 snd-soc-tas2562-y := tas2562.o
+snd-soc-tas256x-y := tas256x/tas2562.o
 snd-soc-tas2764-y := tas2764.o
 snd-soc-tas2780-y := tas2780.o
 # Mux
@@ -689,6 +690,7 @@ obj-$(CONFIG_SND_SOC_STAC9766)	+= snd-soc-stac9766.o
 obj-$(CONFIG_SND_SOC_STI_SAS)	+= snd-soc-sti-sas.o
 obj-$(CONFIG_SND_SOC_TAS2552)	+= snd-soc-tas2552.o
 obj-$(CONFIG_SND_SOC_TAS2562)	+= snd-soc-tas2562.o
+obj-$(CONFIG_SND_SOC_TAS256X)   += snd-soc-tas256x.o
 obj-$(CONFIG_SND_SOC_TAS2764)	+= snd-soc-tas2764.o
 obj-$(CONFIG_SND_SOC_TAS2780)	+= snd-soc-tas2780.o
 obj-$(CONFIG_SND_SOC_TAS2781_COMLIB)	+= snd-soc-tas2781-comlib.o

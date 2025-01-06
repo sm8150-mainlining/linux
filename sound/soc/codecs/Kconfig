@@ -250,6 +250,7 @@ config SND_SOC_ALL_CODECS
 	imply SND_SOC_STI_SAS
 	imply SND_SOC_TAS2552
 	imply SND_SOC_TAS2562
+	imply SND_SOC_TAS256X
 	imply SND_SOC_TAS2764
 	imply SND_SOC_TAS2770
 	imply SND_SOC_TAS2780
@@ -1914,6 +1915,12 @@ config SND_SOC_TAS2552
 config SND_SOC_TAS2562
 	tristate "Texas Instruments TAS2562 Mono Audio amplifier"
 	depends on I2C
+
+config SND_SOC_TAS256X
+	tristate "Texas Instruments TAS256X Audio amplifier"
+	depends on I2C
+	help
+	  Enable support for Texas Instruments TAS256X Audio amplifiers used in some Xiaomi Devices
 
 config SND_SOC_TAS2764
 	tristate "Texas Instruments TAS2764 Mono Audio amplifier"
