@@ -709,7 +709,7 @@
 };
 
 &remoteproc_slpi {
-	status = "disabled";
+	status = "okay";
 	firmware-name = "qcom/sm8150/xiaomi/vayu/slpi.mbn";
 };
 
