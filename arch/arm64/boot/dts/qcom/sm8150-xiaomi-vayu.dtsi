@@ -676,9 +676,9 @@
 		reg = <0>;
 	};
 
-//	dai@1 {
-//		reg = <1>;
-//	};
+	dai@1 {
+		reg = <1>;
+	};
 };
 
 &qupv3_id_0 {
@@ -757,9 +757,9 @@
 	pinctrl-names = "default";
 	model = "xiaomi-vayu";
 
-//	audio-routing = "RX_BIAS", "MCLK",
-//		"AMIC1", "MIC BIAS3",
-//		"AMIC3", "MIC BIAS1",
+	audio-routing = "RX_BIAS", "MCLK",
+		"AMIC1", "MIC BIAS3",
+		"AMIC3", "MIC BIAS1",
 	audio-routing = "MultiMedia1 Playback", "Right OUT",
 		"MultiMedia1 Playback", "Left OUT";
 
@@ -770,12 +770,12 @@
 		};
 	};
 
-//	mm2-dai-link {
-//		link-name = "MultiMedia2";
-//		cpu {
-//			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>;
-//		};
-//	};
+	mm2-dai-link {
+		link-name = "MultiMedia2";
+		cpu {
+			sound-dai = <&q6asmdai MSM_FRONTEND_DAI_MULTIMEDIA2>;
+		};
+	};
 
 	speaker-dai-link {
 		link-name = "Speaker Playback";
@@ -792,21 +792,20 @@
 		};
 	};
 
-	//T_MIC/B_MIC
-//	slimcap-dai-link {
-//		link-name = "SLIM Capture 1";
-//		cpu {
-//			sound-dai = <&q6afedai SLIMBUS_0_TX>;
-//		};
-//
-//		platform {
-//			sound-dai = <&q6routing>;
-//		};
-//
-//		codec {
-//			sound-dai = <&wcd9340 1>; /* AIF1_CAP */
-//		};
-//	};
+	slimcap-dai-link {
+		link-name = "SLIM Capture 1";
+		cpu {
+			sound-dai = <&q6afedai SLIMBUS_0_TX>;
+		};
+
+		platform {
+			sound-dai = <&q6routing>;
+		};
+
+		codec {
+			sound-dai = <&wcd9340 1>; /* AIF1_CAP */
+		};
+	};
 };
 
 &tlmm {
