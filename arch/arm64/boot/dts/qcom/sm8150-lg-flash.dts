@@ -39,7 +39,7 @@
 
 	aliases {
 		serial0 = &uart2;
-		hsuart0 = &uart13;
+		serial1 = &uart13;
 		wifi0 = &wifi;
 	};
 
